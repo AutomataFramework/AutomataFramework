@@ -39,8 +39,15 @@ export async function open(page: Page, url: string, query = ''): Promise<void> {
   await page.waitForFunction(() => window['__automata']?.ready === true)
 }
 
-export const screenIs = (page: Page, name: string): Promise<unknown> =>
-  page.waitForFunction((n) => window['__automata'].screen() === n, name)
+/** Waits until the game shows the screen `name`; when it never does, says which screen it showed instead. */
+export async function screenIs(page: Page, name: string): Promise<void> {
+  try {
+    await page.waitForFunction((n) => window['__automata'].screen() === n, name, { timeout: 15_000 })
+  } catch {
+    const shown = await page.evaluate(() => window['__automata'].screen())
+    throw new Error(`Waited for the screen "${name}" but the game showed "${shown}".`)
+  }
+}
 
 /** A copy of the built game served on its own, for a test that changes its files. */
 export async function ownCopy(built: string): Promise<{ dir: string; url: string; close(): Promise<void> }> {

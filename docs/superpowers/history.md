@@ -63,6 +63,12 @@ Finished milestones and their decision records, setup, rule changes, standing pe
   at 15:27 UTC): `@fontsource-variable/bricolage-grotesque` 5.3.0 and `@fontsource-variable/figtree` 5.3.0 (both OFL-1.1)
   are `devDependencies` of `/shell`, used by its test game only. No font file is added under `packages/`. The new game
   template's way of getting the fonts is P7's.
+- 2026-11-27 16:47 UTC, the Owner (answered "yes" in the project chat, relayed by the coordinator): `/shell` keeps its
+  `devDependencies` `vite` 8.4.0 and `typescript` 6.0.3. TypeScript 6.0.3 is a narrow exception for the Svelte tooling:
+  TypeScript 7's npm package ships only a launcher and no JavaScript compiler API, which `svelte-check` and the Svelte
+  build tools load. The type check itself runs on TypeScript 7 (`svelte-check --tsgo`, `@typescript/native` is an alias
+  of 7.0.2); the root stays on 7.0.2. Follow-up: remove the 6.0.3 line and the alias once the Svelte tools load
+  TypeScript 7. Scope: unit P4, pull request #22.
 
 ## Flaky tests
 

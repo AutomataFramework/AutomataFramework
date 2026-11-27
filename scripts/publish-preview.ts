@@ -72,7 +72,8 @@ const sleep = (ms: number): Promise<void> => new Promise((done) => setTimeout(do
 
 /** Waits until npm serves the version, so the run shows it is really there. */
 async function waitForNpm(name: string, version: string): Promise<void> {
-  for (let tries = 1; tries <= 10; tries++) {
+  // npm took over a minute to serve the first preview (run 45940697237), so wait up to five.
+  for (let tries = 1; tries <= 50; tries++) {
     // oxlint-disable-next-line no-await-in-loop -- one try after another, a few seconds apart
     const response = await fetch(`https://registry.npmjs.org/${name.replace('/', '%2f')}/${version}`)
     if (response.ok) {
@@ -82,7 +83,7 @@ async function waitForNpm(name: string, version: string): Promise<void> {
     // oxlint-disable-next-line no-await-in-loop -- the wait between tries
     await sleep(6000)
   }
-  throw new Error(`npm does not serve ${name}@${version} a minute after it was published.`)
+  throw new Error(`npm does not serve ${name}@${version} five minutes after it was published.`)
 }
 
 async function main(): Promise<void> {

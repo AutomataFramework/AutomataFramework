@@ -205,3 +205,26 @@ owner. N6: the estimate is now 3 hours.
   need its own timeout. The real-pack test must not write the preview version into the real `package.json` files.
 - N10. Run 46010157332 at `13eebff` is red (cancelled at the job timeout after all four uploads). It is this bug, not
   a new flaky check; the coordinator may add it to the `history.md` flaky entry for `f55432a`.
+
+# Round 3 (narrow recheck of R5 and R6 only)
+
+**0635186 PASS**
+
+- Spec: `docs/superpowers/specs/2026-11-27-preview-publish-fix-design.md` at `0635186`, read whole, plus the diff
+  `a273e5c..0635186` (the spec only). Checked only round 2's reds R5 and R6; nothing else was re-audited.
+- This third round is past the two-round cap; the owner was told by the coordinator.
+- Written 2026-11-27 14:00 UTC (from `date`), by a fresh audit session. Read-only apart from this file.
+
+| Red | Fixed? | Where |
+|---|---|---|
+| R5 broken previews until U2 | Yes. The second "measured" bullet now states the owner's 13:39 to 13:41 UTC publish and run 46010157332's broken `0.0.1-preview.10.sha-13eebff` (`workspace:*`, one file), plus `core` `.8` and `.9`. "Stop the broken previews first" disables `publish.yml` before PR #13 merges and re-enables it once U1 has merged, with both `gh workflow` commands, run from the owner's Mac; the table row for #13 waits on "`publish` turned off". Boundaries name `core`, `2d` and `tools` `0.0.1-preview.8` onward for a possible `npm deprecate`. Between U1 and U2 a run fails before any upload (no build, so criterion 3 refuses every tarball), so re-enabling after U1 is safe. | Problem bullet 2; Units table row 0 and "Stop the broken previews first"; Boundaries |
+| R6 read-back budget | Yes. Criterion 6: all uploads first in dependency order, then one wait for every version of the run together, 10-minute budget, job `timeout-minutes` 10 to 20 (install, build, pack and four uploads fit in the other 10). Criterion 7 tests "one shared wait for all versions within one budget". No other line still waits per package. | Criteria 6, 7 |
+
+Notes (not blocking):
+
+- N11. "The problem, measured", first bullet, still says `create-automata@0.0.1-preview.7.sha-fa9bdf0` "is the
+  `preview` tag now"; since run 46010157332 it is `0.0.1-preview.10.sha-13eebff`. Stale wording only; it changes no
+  step.
+- N12. The disable must actually have run before #13 merges; the merging session checks `gh workflow view publish.yml
+  -R AutomataFramework/AutomataFramework` shows it disabled (or the coordinator records that it was run) rather than
+  taking it as done.

@@ -67,6 +67,13 @@ export async function choose(page: Page, name: string): Promise<void> {
   throw new Error(`The button "${name}" could not be reached with the arrow keys.`)
 }
 
+/** Pauses the way this profile does: a tap on the pause button, or the Esc key. */
+export async function pause(page: Page): Promise<void> {
+  const touch = await page.evaluate(() => 'ontouchstart' in window)
+  if (touch) return page.getByRole('button', { name: 'Paused' }).tap()
+  return page.keyboard.press('Escape')
+}
+
 /** Holds a finger on a point of the game, so the white square walks to it. */
 export const walkTo = (page: Page, x: number, y: number): Promise<void> =>
   page.evaluate(([px, py]) => window['__automata'].feed([{ down: ['pointer'], sticks: { pointer: [px, py] } }]), [x, y])

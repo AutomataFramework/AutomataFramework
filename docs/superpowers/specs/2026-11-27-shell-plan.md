@@ -495,20 +495,20 @@ The screens are real HTML laid over the canvas. One Svelte component per item ty
 flow. The splash, menu, pause, end screens and credits are content files the template carries; the shell holds no
 screen of its own but "Something went wrong. Try again".
 
-- [ ] **Journey first (`tests/journeys/shell.spec.ts`, three profiles):** splash, skip, menu, New game, play, pause,
+- [x] **Journey first (`tests/journeys/shell.spec.ts`, three profiles):** splash, skip, menu, New game, play, pause,
       Main menu (asks first), then win and lose, each reached and left. It fails at the first step named.
-- [ ] `flow.test.ts`: the menu shows Continue only when `list()` has a save; Main menu from pause asks first;
+- [x] `flow.test.ts`: the menu shows Continue only when `list()` has a save; Main menu from pause asks first;
       `start: 'play'` skips splash and menu.
-- [ ] Criterion 19: in the built test game, with no rebuild, change the menu screen file (which word a button uses
+- [x] Criterion 19: in the built test game, with no rebuild, change the menu screen file (which word a button uses
       and the order of two items), the HUD file (where the count sits) and the flow file (where Retry goes), reload,
       and each has changed. Message files are not the content files criterion 19 means: words are compiled, and the
       game's own workflow rebuilds them on every commit.
-- [ ] Criterion 8: a screen file with a mistake shows the file, the line and the fix, and no game starts.
-- [ ] Criterion 9: a test game whose `update` throws on tick 100 leaves the menu, settings and saves working.
-- [ ] Criterion 3 (first half): switching to Spanish changes every word on every screen; a test walks every word
+- [x] Criterion 8: a screen file with a mistake shows the file, the line and the fix, and no game starts.
+- [x] Criterion 9: a test game whose `update` throws on tick 100 leaves the menu, settings and saves working.
+- [x] Criterion 3 (first half): switching to Spanish changes every word on every screen; a test walks every word
       shown and fails on any that is the same in both languages and not on a short allow list.
-- [ ] **Review focus 2:** hiding the page pauses the loop; on return, at most 5 ticks run.
-- [ ] **Review focus 5:** a missing Spanish word shows the English one.
+- [x] **Review focus 2:** hiding the page pauses the loop; on return, at most 5 ticks run.
+- [x] **Review focus 5:** a missing Spanish word shows the English one.
 - [ ] Implement, run like a person, commit, pull request, lane 2 review.
 
 ## P5: Shell: settings, on-screen controls, saves screens

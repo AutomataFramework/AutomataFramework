@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { softColours, themeProblems } from '../../../src/features/check/contrast.ts'
 import { skillProblems } from '../../../src/features/check/skills.ts'
 import { cli, mcp, templateGame } from '../../lib/tools.ts'
 
@@ -25,7 +26,18 @@ function gameWith(words: string, page = '#ffffff', es: Record<string, string> = 
     format: 1,
     id: 'theme',
     kind: 'theme',
-    colours: { page, words, button: '#000000', 'button-words': '#ffffff', focus: '#ffd23f', player: [] },
+    colours: {
+      page,
+      words,
+      muted: '#555555',
+      button: '#eeeeee',
+      buttonWords: '#000000',
+      primary: '#000000',
+      primaryWords: '#ffffff',
+      line: '#cccccc',
+      focus: '#2f5bff',
+      player: [],
+    },
   })
   write(dir, 'public/content/menu.json', {
     format: 1,
@@ -116,4 +128,52 @@ test('check: a missing skill fails in both places agents look', () => {
 test('check: --fix on the command line is read as a yes', async () => {
   const result = await cli(gameWith('#000000'), ['check', '--fix'])
   expect(result).toEqual({ code: 0, said: 'All good. The game is ready to play.' })
+})
+
+// One planted failure for each pair of colours the check reads. A 'bad' colour is close to its partner.
+const planted = [
+  ['words', 'page', { words: '#cccccc' }],
+  ['muted', 'page', { muted: '#bbbbbb' }],
+  ['muted', 'button', { muted: '#bbbbbb', page: '#000000' }],
+  ['buttonWords', 'button', { buttonWords: '#dddddd' }],
+  ['primaryWords', 'primary', { primaryWords: '#222222' }],
+  ['focus', 'page', { focus: '#eeeeee' }],
+  ['focus', 'button', { focus: '#d0d0d0', page: '#000000' }],
+] as const
+
+for (const [front, back, change] of planted) {
+  test(`check: a theme with "${front}" hard to read on "${back}" fails naming both`, () => {
+    const colours = { ...softColours, ...change }
+    const text = JSON.stringify({ colours }, null, 2)
+    const problems = themeProblems('public/content/theme.json', text, { colours })
+    const named = problems.filter(
+      (p) => p.message.includes(`"${front}" colour`) && p.message.includes(`"${back}" colour`),
+    )
+    expect(named).toHaveLength(1)
+    expect(named[0]?.line).toBeGreaterThan(1)
+    expect(themeProblems('t.json', '{}', { colours: softColours })).toEqual([])
+  })
+}
+
+test('check: the shell look alone is fine, and a theme that sets only some colours is checked against the rest', () => {
+  expect(themeProblems('t.json', '{}', {})).toEqual([])
+  const dark = { colours: { page: '#171c24' } }
+  // Dark page with the shell's own dark words: unreadable, so the check says so.
+  expect(themeProblems('t.json', '{}', dark).map((p) => p.message)).toEqual([
+    expect.stringContaining('"words" colour #131a22 on the "page" colour #171c24'),
+    expect.stringContaining('"muted" colour #4c5866 on the "page" colour #171c24'),
+  ])
+})
+
+test('check: a screen may name the shell words (Back, Settings) without the game writing them', async () => {
+  const dir = gameWith('#000000')
+  write(dir, 'public/content/menu.json', {
+    format: 1,
+    id: 'menu',
+    kind: 'screen',
+    title: 'play',
+    back: true,
+    items: [{ type: 'button', id: 'go', label: 'settings', does: 'settings' }],
+  })
+  expect((await cli(dir, ['check'])).code).toBe(0)
 })

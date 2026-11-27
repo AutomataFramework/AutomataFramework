@@ -19,10 +19,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "messages"
   ],
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",

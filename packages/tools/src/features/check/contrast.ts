@@ -22,12 +22,32 @@ function contrast(a: [number, number, number], b: [number, number, number]): num
   return (hi + 0.05) / (lo + 0.05)
 }
 
-// Words a person reads, and what they sit on.
+/**
+ * The shell's own colours, for a theme that leaves a colour out. They are the same as `softLook.colours` in
+ * `/shell` (a test in `/shell` fails if they drift), kept here so the tools need not depend on the shell.
+ */
+export const softColours: Record<string, string> = {
+  page: '#f4f6f8',
+  words: '#131a22',
+  muted: '#4c5866',
+  button: '#e2e7ec',
+  buttonWords: '#131a22',
+  primary: '#131a22',
+  primaryWords: '#ffffff',
+  line: '#c9d1d9',
+  focus: '#2f5bff',
+}
+
+// Words a person reads, and what they sit on: 4.5 to 1. A focus ring is not words: 3 to 1.
 const pairs = [
-  ['words', 'page'],
-  ['button-words', 'button'],
+  ['words', 'page', 4.5],
+  ['muted', 'page', 4.5],
+  ['muted', 'button', 4.5],
+  ['buttonWords', 'button', 4.5],
+  ['primaryWords', 'primary', 4.5],
+  ['focus', 'page', 3],
+  ['focus', 'button', 3],
 ] as const
-const needed = 4.5
 
 /** Each pair of theme colours whose words would be hard to read, with the line in the theme file. */
 export function themeProblems(file: string, text: string, theme: unknown): Problem[] {
@@ -36,8 +56,10 @@ export function themeProblems(file: string, text: string, theme: unknown): Probl
     const at = text.split('\n').findIndex((line) => line.includes(`"${key}"`))
     return at < 0 ? 1 : at + 1
   }
-  return pairs.flatMap(([front, back]) => {
-    const [f, b] = [colours[front], colours[back]]
+  const found = pairs.flatMap(([front, back, needed]) => {
+    // A pair the theme does not touch is the shell's own, which is fine. One colour set takes the other from the shell.
+    if (colours[front] === undefined && colours[back] === undefined) return []
+    const [f, b] = [colours[front] ?? softColours[front], colours[back] ?? softColours[back]]
     if (typeof f !== 'string' || typeof b !== 'string') return []
     const [fc, bc] = [readColour(f), readColour(b)]
     if (!fc || !bc) {
@@ -62,4 +84,6 @@ export function themeProblems(file: string, text: string, theme: unknown): Probl
       },
     ]
   })
+  // A colour that cannot be read is in several pairs: say so once.
+  return [...new Map(found.map((p) => [p.message, p])).values()]
 }

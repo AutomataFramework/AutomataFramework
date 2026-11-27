@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { Manifest, Problem } from '@automataframework/core'
 
 /** A content file's text and its checked value, by its path under `public/`. */
@@ -17,6 +19,29 @@ function namedWords(value: unknown, found: Set<string>): Set<string> {
       else namedWords(item, found)
     }
   return found
+}
+
+/**
+ * The words the shell brings with it (Back, Settings, Paused and the rest), by name: a screen may name them without the
+ * game writing them. Read from the shell installed beside the game, else the one next to these tools; none when the
+ * game has no shell.
+ */
+function shellWords(cwd: string): Set<string> {
+  const here = fileURLToPath(new URL('../../../../shell/', import.meta.url))
+  const tries: (() => string)[] = [
+    () => dirname(createRequire(join(cwd, 'package.json')).resolve('@automataframework/shell/package.json')),
+    () => here,
+  ]
+  for (const dir of tries) {
+    try {
+      const file = join(dir(), 'messages/en.json')
+      if (existsSync(file))
+        return new Set(Object.keys(JSON.parse(readFileSync(file, 'utf8')) as object).filter((k) => !k.startsWith('$')))
+    } catch {
+      // Not installed there; try the next place.
+    }
+  }
+  return new Set()
 }
 
 const lineOf = (text: string, word: string): number => {
@@ -48,6 +73,7 @@ export function wordProblems(cwd: string, manifest: Manifest, files: Loaded[]): 
     }
   }
   const [first, ...others] = manifest.languages
+  const brought = shellWords(cwd)
   const base = words.get(first ?? '') ?? {}
   const keys = Object.keys(base).filter((key) => !key.startsWith('$'))
   for (const language of others) {
@@ -65,7 +91,7 @@ export function wordProblems(cwd: string, manifest: Manifest, files: Loaded[]): 
   if (words.has(first ?? ''))
     for (const f of named)
       for (const word of namedWords(f.value, new Set()))
-        if (!(word in base))
+        if (!(word in base) && !brought.has(word))
           problems.push({
             file: f.path,
             line: lineOf(f.text, word),

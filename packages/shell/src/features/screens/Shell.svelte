@@ -40,6 +40,11 @@
 
   function keydown(event: KeyboardEvent): void {
     host.noteKeyboard()
+    // On the splash any key skips it, wherever the focus is.
+    if ($view.kind === 'screen' && $view.screen.layout === 'splash') {
+      if (event.key !== 'Tab') host.send('skip')
+      return
+    }
     if (event.key === 'Escape') {
       host.send($view.kind === 'play' ? 'pause' : 'back')
       return

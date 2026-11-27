@@ -42,6 +42,7 @@
 </script>
 
 {#if screen.layout === 'splash'}
+  <!-- svelte-ignore a11y_click_events_have_key_events -- any key skips the splash: the shell listens for keys on the window -->
   <div
     class="splash"
     role="button"
@@ -51,9 +52,6 @@
       ...screen.items.flatMap((i) => (i.type === 'text' ? [$t(i.words)] : [])),
     ].join('. ')}
     onclick={() => host.send('skip')}
-    onkeydown={(e) => {
-      if (e.key !== 'Tab') host.send('skip')
-    }}
   >
     <div class="logo">
       {#each screen.items as item, i (i)}{#if item.type === 'image'}<Image {item} />{/if}{/each}

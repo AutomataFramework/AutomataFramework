@@ -1,6 +1,6 @@
 // The journey: splash, skip, menu, New game, play, pause, Main menu (asking first), then win and lose, each reached and
 // left. On the phone it goes by touch, on the computer by keys.
-import { choose, expect, open, screenIs, test, walkTo } from '../lib/fixture.ts'
+import { choose, expect, open, pause, screenIs, test, walkTo } from '../lib/fixture.ts'
 
 test('splash to menu to play to pause to menu, then a win and a lose', async ({ page, game }) => {
   await open(page, game)
@@ -19,7 +19,7 @@ test('splash to menu to play to pause to menu, then a win and a lose', async ({ 
   await expect(page.getByText('Stars')).toBeVisible()
 
   // Pause, and leaving for the main menu asks first.
-  await choose(page, 'Paused')
+  await pause(page)
   await screenIs(page, 'pause')
   await choose(page, 'Main menu')
   await expect(page.getByRole('heading', { name: 'Go to the main menu?' })).toBeVisible()
@@ -27,7 +27,7 @@ test('splash to menu to play to pause to menu, then a win and a lose', async ({ 
   await screenIs(page, 'pause')
   await choose(page, 'Resume')
   await screenIs(page, 'play')
-  await choose(page, 'Paused')
+  await pause(page)
   await choose(page, 'Main menu')
   await choose(page, 'Go to main menu')
   await screenIs(page, 'menu')

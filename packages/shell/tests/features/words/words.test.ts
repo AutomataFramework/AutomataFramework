@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { readFileSync, readdirSync, rmSync, mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createWords } from '../../../src/features/words/words.ts'
@@ -78,5 +78,37 @@ test('the compiled shell words are the ones the words files now say', async () =
     }
   } finally {
     rmSync(out, { recursive: true, force: true })
+  }
+})
+
+test('review focus 5: a word missing in Spanish shows the English one, never a blank or a key', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'shell-missing-'))
+  try {
+    mkdirSync(join(dir, 'project.inlang'))
+    mkdirSync(join(dir, 'messages'))
+    writeFileSync(
+      join(dir, 'project.inlang/settings.json'),
+      JSON.stringify({
+        baseLocale: 'en',
+        locales: ['en', 'es'],
+        modules: [join(root, 'node_modules/@inlang/plugin-message-format/dist/index.js')],
+        'plugin.inlang.messageFormat': { pathPattern: './messages/{locale}.json' },
+      }),
+    )
+    writeFileSync(join(dir, 'messages/en.json'), JSON.stringify({ hello: 'Hello', bye: 'Bye' }))
+    writeFileSync(join(dir, 'messages/es.json'), JSON.stringify({ bye: 'Adiós' }))
+    const { compile } = await import('@inlang/paraglide-js')
+    await compile({
+      project: join(dir, 'project.inlang'),
+      outdir: join(dir, 'out'),
+      outputStructure: 'locale-modules',
+      strategy: ['globalVariable', 'baseLocale'],
+    })
+    const game = (await import(`${dir}/out/messages.js`)) as Record<string, unknown>
+    const words = createWords({ game, shell }, () => 'es')
+    expect(words.word('bye')).toBe('Adiós')
+    expect(words.word('hello')).toBe('Hello')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })

@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "id": "theme",
+  "kind": "theme",
+  "colours": {
+    "page": "#171c24",
+    "words": "#f2f4f7",
+    "muted": "#aab4c0",
+    "button": "#27303c",
+    "buttonWords": "#f2f4f7",
+    "primary": "#f2f4f7",
+    "primaryWords": "#131a22",
+    "line": "#3d4958",
+    "focus": "#8fa8ff"
+  }
+}

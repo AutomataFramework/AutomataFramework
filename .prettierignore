@@ -1,0 +1,5 @@
+# The rules kit and the notes are the owner's text, kept as given.
+.claude/
+*.md
+**/*.md
+pnpm-lock.yaml

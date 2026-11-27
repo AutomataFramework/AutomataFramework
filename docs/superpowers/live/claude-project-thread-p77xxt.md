@@ -1,4 +1,0 @@
-- Task: slice 0, the kit and the CI gate (first pull request), then the preview publish, the private-names check and the fresh-agent runs
-- Last commit: (first commit)
-- Next: push, open the draft pull request, watch CI
-- Open decisions: the second agent's model and the caps (one card, after the measured runs)

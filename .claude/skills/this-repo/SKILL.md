@@ -7,7 +7,7 @@ description: "Use when working in this repo: its layout, its CI and its own rule
 
 What is particular to AutomataFramework.
 
-- **The free part of Automata Framework**, public, MIT. It is published to npm as `@automataframework/*` and
+- **The free part of Automata Framework**, public, MIT (but `packages/art`, GPL-3.0-or-later for its unfake.js core, the Owner's choice on 2026-11-27). It is published to npm as `@automataframework/*` and
   `create-automata`. The frozen roadmap (in the project's files, `roadmap/roadmap.md`) says what each slice adds; the
   package list there is frozen.
 - **Slice 0 holds no product code.** The packages arrive in slice 1a; `create-automata` is a placeholder.

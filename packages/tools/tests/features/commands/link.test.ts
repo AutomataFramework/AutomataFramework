@@ -2,8 +2,9 @@ import { expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { type Deps, link } from '../../../src/features/commands/link.ts'
-import type { Ctx } from '../../../src/features/commands/registry.ts'
+import { type Deps, makeLink as link } from '../../../src/features/commands/link.ts'
+import type { Io as Ctx } from '../../../src/features/commands/registry.ts'
+import { cli, mcp } from '../../lib/tools.ts'
 
 const manifest = {
   format: 1,
@@ -82,4 +83,20 @@ test('it says the files will be public before it makes the repo', async () => {
   expect(t.events.indexOf('POST /user/repos')).toBeGreaterThan(sentence)
   expect(t.said.some((s) => s.includes('public on GitHub'))).toBe(true)
   expect(t.said.at(-1)).toContain('Your game is live')
+})
+
+test('link: command line: a game with a mistake is refused in plain words', async () => {
+  const cwd = game()
+  writeFileSync(join(cwd, 'public/automata.json'), '{ "format": 1 ')
+  const result = await cli(cwd, ['link'])
+  expect(result.code).toBe(1)
+  expect(result.said).toContain("didn't put it on a link")
+})
+
+test('link: MCP: the same refusal as a tool', async () => {
+  const cwd = game()
+  writeFileSync(join(cwd, 'public/automata.json'), '{ "format": 1 ')
+  const result = await mcp(cwd, 'make_link')
+  expect(result.error).toBe(true)
+  expect(result.said).toContain("didn't put it on a link")
 })

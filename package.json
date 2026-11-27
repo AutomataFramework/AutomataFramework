@@ -12,7 +12,8 @@
     "knip": "knip",
     "typecheck": "bun check",
     "test": "bun test",
-    "build": "pnpm --recursive --if-present build"
+    "build": "pnpm --recursive --if-present build",
+    "test:browser": "node planted.spec.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.5",

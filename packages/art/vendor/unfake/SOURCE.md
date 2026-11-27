@@ -5,7 +5,8 @@ copied by hand, never installed from npm or git. Only the files the pixel-art pa
 `lib/{pixel,utils,core-client,core-codec,cvfree,edge-detect}.js`, `workers/unfake-core-worker.js` and the built core
 `vendor/unfake-core/unfake_wasm.js` with `unfake_wasm_bg.wasm`. They load nothing else: no other library and nothing from
 the web. unfake.js is MIT (`LICENSE`). Its built core includes the Rust crate `imagequant` 4.4.1, which is
-GPL-3.0-or-later; its source is at the commit above and at https://github.com/ImageOptim/libimagequant.
+GPL-3.0-or-later; its source is at the commit above and at https://github.com/ImageOptim/libimagequant. So
+`@automataframework/art` as a whole is GPL-3.0-or-later (`../../LICENSE`), the Owner's choice on 2026-11-27.
 
 sha256 of each file as copied:
 

@@ -2,7 +2,7 @@
   "name": "@automataframework/art",
   "version": "0.0.1",
   "description": "Opt-in, build time only: turns AI-made pictures into clean pixel art in the DUEL palette. Formats may change.",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "author": "McThayDT",
   "homepage": "https://automataframework.com",
   "repository": {
@@ -26,7 +26,8 @@
   },
   "files": [
     "dist",
-    "vendor"
+    "vendor",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json"

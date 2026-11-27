@@ -52,6 +52,13 @@ Finished milestones and their decision records, setup, rule changes, standing pe
   and report after. They never ask the Owner to type or tap merge. Not covered: product choices, money, new accounts,
   releases and tags, credentials, and running fork code on RunPod pods (even after queueing); those still ask.
 
+## Decisions
+
+- 2026-11-27 14:22 UTC, the Owner (decision card, answered "Today's unfake.js" in the project chat): `/art` copies
+  unfake.js 1.4.0 (commit 6636868), whose built core includes `imagequant` (GPL-3.0-or-later), so
+  `@automataframework/art` is GPL-3.0-or-later. Every other package stays MIT; games never load `/art`, and the
+  pictures it makes are not covered. Scope: unit A1, pull request #15.
+
 ## Flaky tests
 
 - `publish` on `main`, run 45966147542 (2026-11-27, commit f55432a): npm took the upload of

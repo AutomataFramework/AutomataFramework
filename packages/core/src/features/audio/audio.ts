@@ -14,8 +14,14 @@ export function createAudio() {
   for (const bus of [buses.music, buses.effects]) bus.connect(master)
   const sounds = new Map<string, AudioBuffer>()
   const playing = new Map<string, Set<AudioBufferSourceNode>>()
-  let masterVolume = 1
+  // The volumes as they were last set. `gain` answers from these, not from the nodes: while sound is running, reading a
+  // node's `gain.value` straight after setting it can give the value from before, because the audio thread writes it too.
+  const levels: Record<Bus, number> = { master: 1, music: 1, effects: 1 }
   let muted = false
+  const level = (bus: Bus): number => (bus === 'master' && muted ? 0 : levels[bus])
+  const apply = (bus: Bus): void => {
+    buses[bus].gain.value = level(bus)
+  }
 
   const wake = (): void => void context.resume().catch(() => {})
   for (const type of ['pointerdown', 'keydown'] as const) globalThis.addEventListener?.(type, wake, { once: true })
@@ -50,16 +56,14 @@ export function createAudio() {
       for (const source of playing.get(id) ?? []) source.stop()
     },
     setGain(bus: Bus, value: number): void {
-      const clamped = Math.min(1, Math.max(0, value))
-      if (bus === 'master') {
-        masterVolume = clamped
-        if (!muted) master.gain.value = clamped
-      } else buses[bus].gain.value = clamped
+      levels[bus] = Math.min(1, Math.max(0, value))
+      apply(bus)
     },
     mute(on: boolean): void {
       muted = on
-      master.gain.value = on ? 0 : masterVolume
+      apply('master')
     },
-    gain: (bus: string): number => buses[bus as Bus]?.gain.value ?? 0,
+    /** The volume a bus is set to, between 0 and 1: what its gain node is given. The master reads 0 while muted. */
+    gain: (bus: string): number => (Object.hasOwn(levels, bus) ? level(bus as Bus) : 0),
   }
 }

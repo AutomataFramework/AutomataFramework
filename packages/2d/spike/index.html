@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Frame count test</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; background: #101820; color: #fff; font-family: system-ui, sans-serif; text-align: center; }
+      canvas { display: block; width: 100%; image-rendering: pixelated; background: #000; }
+      .numbers { display: flex; justify-content: space-around; padding: 12px 8px 4px; }
+      .numbers div { flex: 1; }
+      .label { font-size: 18px; color: #c8d0d8; }
+      .digits { font-size: 88px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+      #lowest { color: #ffd23f; }
+      button { margin: 12px auto; padding: 16px 28px; min-height: 56px; font-size: 22px; border: 0; border-radius: 12px; background: #ffd23f; color: #101820; font-weight: 700; }
+      #note { font-size: 15px; color: #c8d0d8; padding: 0 16px 24px; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div class="numbers">
+      <div><div class="label">Frames a second</div><div class="digits" id="now">--</div></div>
+      <div><div class="label">Lowest seen</div><div class="digits" id="lowest">--</div></div>
+    </div>
+    <button id="reset" type="button">Start the count again</button>
+    <div id="note">Wait about 10 seconds, then read the yellow number.</div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

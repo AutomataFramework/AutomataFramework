@@ -35,8 +35,19 @@ export { expect }
 
 /** Opens the game at `url` and waits until the first frame is on the screen. */
 export async function open(page: Page, url: string, query = ''): Promise<void> {
+  const heard: string[] = []
+  page.on('console', (message) => heard.push(`${message.type()}: ${message.text()}`))
+  page.on('pageerror', (error) => heard.push(`error: ${error.message}`))
+  page.on('requestfailed', (request) => heard.push(`failed: ${request.url()}`))
   await page.goto(`${url}${query}`)
-  await page.waitForFunction(() => window['__automata']?.ready === true)
+  try {
+    await page.waitForFunction(() => window['__automata']?.ready === true, undefined, { timeout: 20_000 })
+  } catch {
+    const words = await page.evaluate(() => document.body.innerText.slice(0, 300)).catch(() => '(no page)')
+    throw new Error(
+      `The game never got its first frame on the screen. The page said "${words}". Heard: ${heard.join(' | ')}`,
+    )
+  }
 }
 
 /** Waits until the game shows the screen `name`; when it never does, says which screen it showed instead. */

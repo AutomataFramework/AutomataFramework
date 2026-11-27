@@ -29,7 +29,15 @@ function testImage(): Texture {
 }
 
 const app = new Application()
-await app.init({ width, height, background: '#101820', antialias: false, resolution: 1, autoStart: false, preference: 'webgl' })
+await app.init({
+  width,
+  height,
+  background: '#101820',
+  antialias: false,
+  resolution: 1,
+  autoStart: false,
+  preference: 'webgl',
+})
 const canvas = app.canvas
 canvas.id = 'game'
 document.getElementById('game')?.replaceWith(canvas)
@@ -87,7 +95,12 @@ function update(): void {
 
 function draw(): void {
   for (const [i, m] of movers.entries())
-    drawSprite('spark', m.x, m.y, { rotation: m.angle, scale: 0.75 + (i % 3) * 0.25, alpha: 0.6 + (i % 4) * 0.1, flipX: i % 2 === 0 })
+    drawSprite('spark', m.x, m.y, {
+      rotation: m.angle,
+      scale: 0.75 + (i % 3) * 0.25,
+      alpha: 0.6 + (i % 4) * 0.1,
+      flipX: i % 2 === 0,
+    })
   endFrame()
 }
 

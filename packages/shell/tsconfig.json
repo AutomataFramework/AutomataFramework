@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "bun"],
+    "paths": {
+      "@automataframework/core/browser": ["../core/src/browser.ts"],
+      "@automataframework/*": ["../*/src/index.ts"]
+    }
+  },
+  "include": ["src", "tests", "scripts"]
+}

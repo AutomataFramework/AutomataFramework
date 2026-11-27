@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "id": "theme",
+  "kind": "theme",
+  "colours": {
+    "page": "#fbeaa3",
+    "words": "#1a332c",
+    "muted": "#385140",
+    "button": "#ead48a",
+    "buttonWords": "#1a332c",
+    "primary": "#1a332c",
+    "primaryWords": "#fbeaa3",
+    "line": "#b9a865",
+    "focus": "#94363a"
+  },
+  "fonts": { "title": "monospace", "main": "monospace", "plain": "monospace" },
+  "corners": {
+    "card": { "size": 0, "steep": 1 },
+    "button": { "size": 0, "steep": 1 },
+    "small": { "size": 0, "steep": 1 }
+  },
+  "outline": 4,
+  "pixelArt": true
+}

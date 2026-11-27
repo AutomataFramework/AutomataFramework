@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "id": "hud",
+  "kind": "hud",
+  "items": [
+    {
+      "type": "text",
+      "shows": "game.score",
+      "label": "stars",
+      "where": "top-left"
+    },
+    {
+      "type": "text",
+      "shows": "game.seconds",
+      "label": "time",
+      "where": "top"
+    }
+  ]
+}

@@ -38,6 +38,18 @@ The main screen is one canvas: a white square at the top left and a yellow one a
 - Mistake: change `"goal"` in `public/content/level.json` to `"far"`, run `npm run check`. It says `public/content/level.json, line 5` and what to change, and exits 1. Reload the page: the same message is shown and no game starts.
 - Link: `npm run link` with no GitHub sign-in prints one plain sentence and makes nothing. With a stand-in GitHub it makes the repo, turns Pages on from a workflow, and pushes (the journey test does this).
 
+## The shell's test game
+
+`packages/shell` draws a game's menus, pause, settings and end screens from files. Its test game has no art: a white square, three stars and a timer. Build it and serve it from the test helpers (no packing, no install):
+
+```
+AUTOMATA_CHROMIUM=/opt/pw-browsers/chromium-*/chrome-linux64/chrome bun -e "
+import { buildTestGame, serve } from './packages/shell/tests/lib/test-game.ts'
+const s = await serve(await buildTestGame()); console.log(s.url); await new Promise(() => {})"
+```
+
+Open the printed link twice: a computer 1280 by 720 where only keys are used (any key skips the splash, Enter presses, arrows move along the buttons, Esc pauses and goes back), and a phone 375 by 667 with touch only (tap the splash, New game, Paused, Settings, Language, Español: the words change on every screen). `window.__automata.screen()` names the screen on show. `pnpm test:browser` runs this as `shell.spec.ts` (three profiles), `files.spec.ts` and `look.spec.ts`. Last run by hand on this change: build and serve 0.8 seconds, keys journey play, pause, play again, touch journey to Spanish language.
+
 ## Stop it
 
 Stop the dev server (`pkill -f "vite --port 5199"`) and `rm -rf /tmp/v`.

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "gameName": "Test Game",
+  "stars": "Stars",
+  "time": "Time",
+  "madeBy": "Made by",
+  "musicBy": "Music",
+  "madeWith": "Made with"
+}

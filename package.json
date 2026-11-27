@@ -10,7 +10,7 @@
     "lint": "oxlint --deny-warnings && bun fmt --check .",
     "format": "bun fmt .",
     "knip": "knip",
-    "typecheck": "bun check",
+    "typecheck": "bun check && pnpm --filter @automataframework/shell check:svelte",
     "test": "bun test",
     "build": "pnpm --recursive --if-present build",
     "test:browser": "playwright test"

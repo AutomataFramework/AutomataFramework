@@ -5,3 +5,5 @@ dist/
 .env.*
 test-results/
 playwright-report/
+.svelte-check/
+packages/shell/tests/fixtures/test-game/src/paraglide/

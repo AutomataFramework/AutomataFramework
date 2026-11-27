@@ -1,5 +1,6 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import type { Play } from '@automataframework/core'
 import { z } from 'zod'
 import { isSoftware, openGame } from '../browser/open.ts'
 import { fail, ok } from '../../lib/result.ts'
@@ -42,6 +43,23 @@ export function costliest(samples: Stats[]): string {
   return `${parts[part]} (${mean(part).toFixed(1)} ms a frame${most})`
 }
 
+/** The first kept play, when there is one: what a person did is the load the game is measured under. */
+function firstPlay(cwd: string): Play | null {
+  const dir = join(cwd, 'plays')
+  if (!existsSync(dir)) return null
+  const name = readdirSync(dir)
+    .filter((file) => file.endsWith('.json'))
+    .toSorted()[0]
+  if (!name) return null
+  try {
+    return JSON.parse(readFileSync(join(dir, name), 'utf8')) as Play
+  } catch {
+    return null
+  }
+}
+
+type Automata = { send?(event: string): void; feedRuns?(runs: Play['runs']): void }
+
 export const smooth = {
   summary: 'Check the game stays smooth on a slow phone: at least 30 frames a second.',
   input: z.object({
@@ -61,6 +79,15 @@ export const smooth = {
             fix: 'Run it on a computer with a graphics chip.',
           },
         ])
+      // A game with screens (the shell) can be started and fed a kept play, so the numbers are of a game being played.
+      const play = firstPlay(io.cwd)
+      if (play)
+        await opened.page.evaluate((runs) => {
+          const api = (window as unknown as Record<string, Automata>)['__automata']
+          if (!api?.feedRuns) return
+          api.send?.('new-game')
+          api.feedRuns(runs)
+        }, play.runs)
       const samples: Stats[] = []
       const read = (): Promise<Stats> =>
         opened.page.evaluate(

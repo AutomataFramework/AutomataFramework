@@ -1,0 +1,82 @@
+{
+  "format": 1,
+  "id": "flow",
+  "kind": "flow",
+  "start": "splash",
+  "screens": {
+    "splash": {
+      "screen": "splash",
+      "after": 2800,
+      "on": {
+        "skip": "menu",
+        "timeout": "menu"
+      }
+    },
+    "menu": {
+      "screen": "menu",
+      "on": {
+        "new-game": "play",
+        "settings": "settings"
+      }
+    },
+    "play": {
+      "hud": "hud",
+      "on": {
+        "pause": "pause",
+        "win": "win",
+        "lose": "lose"
+      }
+    },
+    "pause": {
+      "screen": "pause",
+      "on": {
+        "resume": "play",
+        "back": "play",
+        "settings": "settings",
+        "main-menu": {
+          "ask": "askMainMenu",
+          "yes": "menu"
+        }
+      }
+    },
+    "settings": {
+      "screen": "settings",
+      "on": {
+        "language": "language",
+        "sound": "sound",
+        "controls": "controls"
+      }
+    },
+    "language": {
+      "screen": "language",
+      "on": {}
+    },
+    "sound": {
+      "screen": "sound",
+      "on": {}
+    },
+    "controls": {
+      "screen": "controls-screen",
+      "on": {}
+    },
+    "win": {
+      "screen": "win",
+      "on": {
+        "new-game": "play",
+        "credits": "credits",
+        "main-menu": "menu"
+      }
+    },
+    "lose": {
+      "screen": "lose",
+      "on": {
+        "retry": "play",
+        "main-menu": "menu"
+      }
+    },
+    "credits": {
+      "screen": "credits-screen",
+      "on": {}
+    }
+  }
+}

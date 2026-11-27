@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "id": "win",
+  "kind": "screen",
+  "above": "gameName",
+  "title": "win",
+  "items": [
+    {
+      "type": "button",
+      "id": "play-again",
+      "label": "playAgain",
+      "does": "new-game",
+      "main": true
+    },
+    {
+      "type": "button",
+      "id": "credits",
+      "label": "credits",
+      "does": "credits",
+      "opens": true
+    },
+    {
+      "type": "button",
+      "id": "main-menu",
+      "label": "mainMenu",
+      "does": "main-menu"
+    }
+  ]
+}

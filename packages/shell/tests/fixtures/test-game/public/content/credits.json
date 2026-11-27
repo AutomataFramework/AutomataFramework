@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "id": "credits",
+  "kind": "credits",
+  "lines": [
+    {
+      "role": "madeBy",
+      "names": ["The test"]
+    },
+    {
+      "role": "musicBy",
+      "names": ["Nobody"]
+    },
+    {
+      "role": "madeWith",
+      "names": ["Automata"]
+    }
+  ]
+}

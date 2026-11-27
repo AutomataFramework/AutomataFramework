@@ -41,6 +41,21 @@ export async function startRenderer(options: {
   live = { app, width: options.width, height: options.height, pool: [], used: 0, top: 0, drawStart: 0, frame: 0 }
 }
 
+/**
+ * How many real screen pixels the canvas draws for each of the game's own. A game shown bigger than its own size, or
+ * on a screen with a denser grid, is drawn finer instead of stretched blurry. Steps of a quarter, never under 1 and
+ * never over 3, so a slow phone is not asked for too many pixels and a resize does not redo the canvas for nothing.
+ */
+export function setResolution(wanted: number): void {
+  const l = started()
+  const resolution = Math.min(3, Math.max(1, Math.round(wanted * 4) / 4))
+  if (l.app.renderer.resolution === resolution) return
+  l.app.renderer.resize(l.width, l.height, resolution)
+}
+
+/** The resolution now drawn at: real pixels for each of the game's own. */
+export const resolution = (): number => started().app.renderer.resolution
+
 /** The game's size in its own pixels, from `automata.json`. */
 export const screenSize = (): [number, number] => [started().width, started().height]
 

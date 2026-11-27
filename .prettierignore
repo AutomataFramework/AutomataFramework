@@ -5,3 +5,5 @@
 pnpm-lock.yaml
 # Code copied in from other projects, kept exactly as it came.
 packages/*/vendor/
+# The shell's compiled words, written by Paraglide's compiler.
+packages/shell/compiled/

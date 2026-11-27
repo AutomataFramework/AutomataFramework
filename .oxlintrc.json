@@ -5,7 +5,7 @@
     "suspicious": "error",
     "perf": "error"
   },
-  "ignorePatterns": [".claude/**", "packages/*/vendor/**"],
+  "ignorePatterns": [".claude/**", "packages/*/vendor/**", "packages/shell/compiled/**"],
   "overrides": [
     {
       "files": ["scripts/check-commit-authors.ts"],

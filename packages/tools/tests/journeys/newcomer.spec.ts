@@ -73,6 +73,7 @@ function standInGithub(bareRoot: string, calls: string[]): Promise<Server> {
 }
 
 test('a newcomer makes a game with one line, plays it, and puts it on a link', async ({ page }) => {
+  test.setTimeout(600_000)
   // 1. Pack the packages and install them outside the repo.
   run(repo, 'pnpm', ['--recursive', '--if-present', 'build'])
   const packs = join(work, 'packs')
@@ -114,12 +115,14 @@ test('a newcomer makes a game with one line, plays it, and puts it on a link', a
   try {
     await page.goto(`http://127.0.0.1:${(pages.address() as AddressInfo).port}/my-game/`)
     await page.waitForFunction(() => (window as any)['__automata']?.ready === true)
-    const goal = await page.evaluate(() => {
+    const goal = await page.evaluate(async () => {
       const a = (window as any)['__automata']
       const canvas = document.querySelector('canvas') as HTMLCanvasElement
       const box = canvas.getBoundingClientRect()
+      // The canvas has as many pixels as the screen shows, so the game's own size comes from its file.
+      const [width, height] = ((await (await fetch('automata.json')).json()) as { size: [number, number] }).size
       const [gx, gy] = a.state().game.goal as [number, number]
-      return { x: box.left + (gx * box.width) / canvas.width, y: box.top + (gy * box.height) / canvas.height }
+      return { x: box.left + (gx * box.width) / width, y: box.top + (gy * box.height) / height }
     })
     await page.mouse.move(goal.x, goal.y)
     await page.mouse.down()

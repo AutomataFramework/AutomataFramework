@@ -3,6 +3,14 @@ import { layerProblems } from '../../../tests/lib/layers.ts'
 
 test('2d: every import goes down the layers: frame-count, renderer, sprites, shapes, text, run', () => {
   expect(
-    layerProblems(`${import.meta.dir}/../src`, ['frame-count', 'renderer', 'sprites', 'shapes', 'text', 'run']),
+    layerProblems(`${import.meta.dir}/../src`, [
+      'frame-count',
+      'renderer',
+      'sprites',
+      'shapes',
+      'text',
+      'stage',
+      'run',
+    ]),
   ).toEqual([])
 })

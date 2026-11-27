@@ -97,3 +97,34 @@ test('empty words draw nothing and do not throw', async ({ page }) => {
   })
   expect(read).toEqual([0, 0, 0])
 })
+
+test('on a sharper canvas the words keep their size and place but are drawn with more pixels', async ({ page }) => {
+  const read = await page.evaluate(() => {
+    const { renderer, text } = window.two
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement
+    const copy = Object.assign(document.createElement('canvas'), { width: 300, height: 120 })
+    const g = copy.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D
+    const drawn = (): { ends: number[]; backing: number } => {
+      renderer.beginFrame()
+      text.drawText('Hello', 20, 10, { size: 20, color: '#ff0000' })
+      renderer.present()
+      // The whole canvas, whatever its backing size, scaled down to the game's own 300 by 120.
+      g.drawImage(canvas, 0, 0, 300, 120)
+      const data = g.getImageData(0, 0, 300, 40).data
+      const lit = Array.from({ length: 300 }, (_, x) => x).filter((x) =>
+        Array.from({ length: 40 }, (_, y) => y).some((y) => (data[(y * 300 + x) * 4] ?? 0) > 100),
+      )
+      return { ends: [lit[0] ?? -1, lit.at(-1) ?? -1], backing: canvas.width }
+    }
+    const plain = drawn()
+    renderer.setResolution(2)
+    const sharp = drawn()
+    return { plain, sharp }
+  })
+  expect(read.plain.backing).toBe(300)
+  expect(read.sharp.backing).toBe(600)
+  // Same words, same place: the ends of the ink agree to a pixel or two, in the game's own pixels.
+  expect(Math.abs((read.sharp.ends[0] ?? 0) - (read.plain.ends[0] ?? 0))).toBeLessThanOrEqual(2)
+  expect(Math.abs((read.sharp.ends[1] ?? 0) - (read.plain.ends[1] ?? 0))).toBeLessThanOrEqual(3)
+  expect(read.plain.ends[1]).toBeGreaterThan(50)
+})

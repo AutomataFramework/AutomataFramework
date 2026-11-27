@@ -65,6 +65,7 @@ What is particular to AutomataFramework.
 ## Structure
 
 ```
+packages/shell/                   the game shell: screens, hud and flow from files (Svelte), its test game and look specs
 packages/create-automata/         the placeholder `npm create automata` (prints "not ready yet")
 scripts/check-commit-authors.ts   the commit and pull request words check
 scripts/check-private-names.ts    the private-names check

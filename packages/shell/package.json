@@ -1,0 +1,54 @@
+{
+  "name": "@automataframework/shell",
+  "version": "0.0.1",
+  "description": "The game shell: splash, menus, pause, end screens and the in-game HUD, drawn from content files. Formats may change.",
+  "license": "MIT",
+  "author": "McThayDT",
+  "homepage": "https://automataframework.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AutomataFramework/AutomataFramework.git",
+    "directory": "packages/shell"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "messages"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "check:svelte": "svelte-check --tsgo --tsconfig ./tsconfig.json",
+    "compile:words": "bun scripts/compile-words.ts"
+  },
+  "dependencies": {
+    "@automataframework/2d": "workspace:*",
+    "@automataframework/core": "workspace:*",
+    "svelte": "5.59.2",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "@fontsource-variable/figtree": "5.3.0",
+    "@inlang/paraglide-js": "2.25.4",
+    "@inlang/plugin-message-format": "4.4.4",
+    "@sveltejs/vite-plugin-svelte": "7.3.2",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "svelte-check": "4.7.8",
+    "typescript": "6.0.3",
+    "vite": "8.4.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

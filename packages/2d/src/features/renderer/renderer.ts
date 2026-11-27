@@ -53,6 +53,9 @@ export function setResolution(wanted: number): void {
   l.app.renderer.resize(l.width, l.height, resolution)
 }
 
+/** The resolution now drawn at: real pixels for each of the game's own. */
+export const resolution = (): number => started().app.renderer.resolution
+
 /** The game's size in its own pixels, from `automata.json`. */
 export const screenSize = (): [number, number] => [started().width, started().height]
 

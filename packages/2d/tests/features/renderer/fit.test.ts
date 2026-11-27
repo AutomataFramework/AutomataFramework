@@ -14,8 +14,8 @@ test('pixel art scales by whole numbers only, rounding down', () => {
   expect(fitScale(1440, 810, 320, 180, true)).toBe(4)
 })
 
-test('a window smaller than the game still shows it, shrunk, and never at nothing', () => {
+test('a window smaller than the game shows all of it, shrunk, and a window of nothing gives 1', () => {
   expect(fitScale(160, 90, 320, 180, false)).toBe(0.5)
-  expect(fitScale(160, 90, 320, 180, true)).toBe(1)
-  expect(fitScale(0, 0, 320, 180, false)).toBeGreaterThan(0)
+  expect(fitScale(160, 90, 320, 180, true)).toBe(0.5)
+  expect(fitScale(0, 0, 320, 180, false)).toBe(1)
 })

@@ -11,8 +11,11 @@ credential step and is not in this brief.
   builds, so `dist/` never exists. `create-automata@0.0.1-preview.7.sha-fa9bdf0` holds no `dist/` and is the `preview`
   tag now: `npm create automata@preview` gets no command (run 46007544289: "No bin file found at dist/bin.js").
 - `npm publish` leaves `workspace:*` as written. `@automataframework/2d` and `tools` depend on
-  `@automataframework/core: workspace:*`. Today they are left out (not on npm), but the owner is first-publishing
-  `0.0.1` of `core`, `2d` and `tools` now, so the next merge would publish them with a range no one can install.
+  `@automataframework/core: workspace:*`. The owner's first publish of `core`, `2d` and `tools` `0.0.1` landed at
+  13:39 to 13:41 UTC, so every merge since publishes all four packages broken: run 46010157332 at `13eebff` published
+  `0.0.1-preview.10.sha-13eebff` of each, and `2d`'s has `"@automataframework/core": "workspace:*"` and one file
+  (`package.json`). `core@0.0.1-preview.8` and `.9` also hold one file. A docs-only merge passes `ci`, so it publishes
+  too.
 - Packages go out in name order: `2d` before `core`, so `2d`'s preview would point at a `core` preview not yet up.
 - The read-back (`waitForNpm`) asks `/<name>/<version>` every 6 s for 5 min and fails the run when npm is slow.
   At `f55432a` npm took the upload ("may take a few minutes to become available") and the run went red at 5 min; the
@@ -31,8 +34,9 @@ green without publishing twice.
 1. **Built.** `publish.yml` sets up pnpm (the version in `packageManager`), runs `pnpm install --frozen-lockfile` and
    `pnpm build` before the script.
 2. **Packed by pnpm.** For each package, the script sets the preview version in every package of the run, then
-   `pnpm pack` makes the tarball (pnpm turns `workspace:*` into the exact version), and `npm publish <tarball>`
-   publishes it, so npm's own trusted publishing and `--provenance` are unchanged.
+   `pnpm pack` makes the tarball (pnpm turns `workspace:*` into the exact version), and
+   `npm publish <tarball> --tag preview --access public --provenance` publishes it, so npm's own trusted publishing
+   and provenance are unchanged and `latest` never moves.
 3. **Checked before it leaves.** Before any upload, every tarball is unpacked and the run fails, publishing nothing,
    when a tarball lacks a `bin` target, an `exports` target (every string in the map), `main` or `types` where set,
    or holds a dependency range starting `workspace:`. Each failure names the package and the file.
@@ -45,14 +49,19 @@ green without publishing twice.
 5. **Re-run safe.** A version npm already lists is not published again. When `npm publish` answers "cannot publish
    over the previously published versions" for the exact version being published (npm took it but does not list it
    yet), the run logs that it is already published and goes on to the read-back; any other publish error stays red.
-6. **Read-back.** After every upload, the run waits until npm lists each version (the package document's `versions`,
-   asked with `cache-control: no-cache` and a new query each try, or the version document). Budget 10 minutes for the
-   whole run, not per package. On timeout the run is red and says to re-run it, which (criterion 5) uploads nothing.
+6. **Read-back.** All uploads go first, in dependency order (npm does not check at upload that a dependency's
+   version exists, and the tarballs already hold exact versions). After the last upload, the run waits until npm
+   lists every version of the run, together, so a run costs about one npm delay, not one per package (run 46010157332
+   took 2m11s to 2m46s per package, 9m58s in all, waiting after each). npm lists a version when the package
+   document's `versions` holds it (asked with `cache-control: no-cache` and a new query each try) or the version
+   document answers. Budget 10 minutes for the whole wait. On timeout the run is red and says to re-run it, which (criterion 5) uploads nothing.
    The job's `timeout-minutes` goes from 10 to 20.
 7. **Tests** in `tests/scripts/publish-preview.test.ts`: missing `bin`, missing `exports` target, a `workspace:`
    range, dependency order, a left-out dependency leaving its dependent out, a template dependency ordering and leaving
    out `create-automata`, a template base-version mismatch, "cannot publish over" counted as published while any other
-   publish error throws, the read-back's request (no-cache header, changing query) and its one budget. CI's `test` job
+   publish error throws, the upload's arguments (`--tag preview` included), the read-back's request (no-cache header,
+   changing query) and one shared wait for all versions within one budget. Tests that build or pack carry their own
+   timeout and never write a preview version into the real `package.json` files. CI's `test` job
    does not build, so the test runs `pnpm build` itself, then packs every real package into a temporary folder and
    passes the check; the "`dist/` removed" case works on a temporary copy of one package, never on the real
    `packages/*/dist`. A temporary pnpm workspace proves `pnpm pack` writes the exact version for `workspace:*`.
@@ -60,21 +69,29 @@ green without publishing twice.
 8. **Live proof.** After U2 merges, its `publish` run on `main` is green, and: `npm pack create-automata@preview`
    lists `dist/bin.js`; `npm view @automataframework/tools@preview dependencies` shows an exact `core` preview
    version; `npm create automata@preview <dir>` then `npm install` in that folder succeeds (once `core`, `2d` and
-   `tools` are on npm); `npm view create-automata@preview dist.attestations` shows a provenance attestation.
+   `tools` are on npm); `npm view create-automata@preview dist.attestations` shows a provenance attestation; and
+   `npm view <name> dist-tags.latest` is still `0.0.1` for all four.
 
 ## Units
 
-The rules keep a workflow change out of a pull request that changes code or tests (`CLAUDE.md` Verification, the
-`ruleMix` hook), and this session may push only to `claude/project-thread-5l49kj`. So the units are separate pull
+The rules keep a workflow change out of a pull request that changes code or tests (`CLAUDE.md` Verification; the
+`ruleMix` hook would say so too, but `rules.json` has `ruleMix.firstTimeSetup: true`, so it refuses nothing today), and this session may push only to `claude/project-thread-5l49kj`. So the units are separate pull
 requests on that branch, one after the other, each restarted from `main` after the one before merges. This departs
 from `staged-path`'s one implementation pull request; the owner is told.
 
 | Order | Unit | Lane | Files | Waits on | Check before merge |
 |---|---|---|---|---|---|
-| 0 | this spec, PR #13 | 1 | the spec, its plan audits | plan audit passes | `gate` green |
+| 0 | this spec, PR #13 | 1 | the spec, its plan audits | plan audit passes; `publish` turned off | `gate` green |
 | 1 | U1 script | 3 | `scripts/publish-preview.ts`, `tests/scripts/publish-preview.test.ts` | #13 merged | criteria 2 to 7 in `bun test`; implementation audit of U1's head |
 | 2 | U2 workflow | 3 | `.github/workflows/publish.yml`, the publish line of the `this-repo` skill | U1 merged | criterion 1; implementation audit of U2's head; then criterion 8 on `main` |
 | 3 | U3 workflow test | 1 | `tests/workflows/publish.test.ts` | U2 merged | criterion 7, workflow part |
+
+**Stop the broken previews first.** Before PR #13 merges, `publish` is turned off:
+`gh workflow disable publish.yml -R AutomataFramework/AutomataFramework`. It is turned back on with
+`gh workflow enable publish.yml -R AutomataFramework/AutomataFramework` once U1 has merged: from then on a run fails
+before any upload (below), so U2's merge publishes the first good previews. Both are reversible repository settings,
+run from the owner's Mac (the cloud session's `gh` is limited to search). Merges while it is off get no preview; U2's
+merge publishes one that holds them.
 
 Each lane 3 pull request gets its own implementation audit of its own head commit, so no audit reads a commit that
 cannot yet be a pull request. U2 is built and checked locally while U1 is audited, and pushed the moment U1 merges, so
@@ -91,6 +108,6 @@ rewrites the header line that says a re-run "fails on 'cannot publish over'", wh
 ## Boundaries
 
 - No new dependency: pnpm and npm are already in the stack; `tar` is on GitHub's runners.
-- Not in scope: `npm deprecate` of the broken previews `0.0.1-preview.2` to `.7` (an outside action; the owner may ask
-  for it), the Claude Code monthly cap (R2), and the round 2 note on previews landing out of order.
+- Not in scope: `npm deprecate` of the broken previews (`create-automata` `0.0.1-preview.2` to `.10`, and `core`,
+  `2d` and `tools` `0.0.1-preview.8` onward; an outside action the owner may ask for), the Claude Code monthly cap (R2), and the round 2 note on previews landing out of order.
 - Expected duration: about 3 hours of session time, three audits and two live runs included.

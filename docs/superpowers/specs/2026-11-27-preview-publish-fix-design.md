@@ -37,43 +37,60 @@ green without publishing twice.
    when a tarball lacks a `bin` target, an `exports` target (every string in the map), `main` or `types` where set,
    or holds a dependency range starting `workspace:`. Each failure names the package and the file.
 4. **Dependency order.** Packages publish dependencies first. A package whose workspace dependency is left out of the
-   run (not on npm) is left out too, with a line saying why.
-5. **Re-run safe.** A version npm already lists is not published again; the run goes straight to its read-back.
+   run (not on npm) is left out too, with a line saying why. A package's dependencies here include those in its
+   `template/package.json` (`create-automata`'s template asks for `@automataframework/2d`, `core` and `tools` at
+   `create-automata`'s own version, `packages/create-automata/src/bin.ts`), read from that file so a new template
+   dependency is covered by itself. The run fails before any upload when a template dependency's base version differs
+   from its package's, since the template would then ask for a version that does not exist.
+5. **Re-run safe.** A version npm already lists is not published again. When `npm publish` answers "cannot publish
+   over the previously published versions" for the exact version being published (npm took it but does not list it
+   yet), the run logs that it is already published and goes on to the read-back; any other publish error stays red.
 6. **Read-back.** After every upload, the run waits until npm lists each version (the package document's `versions`,
    asked with `cache-control: no-cache` and a new query each try, or the version document). Budget 10 minutes for the
    whole run, not per package. On timeout the run is red and says to re-run it, which (criterion 5) uploads nothing.
    The job's `timeout-minutes` goes from 10 to 20.
 7. **Tests** in `tests/scripts/publish-preview.test.ts`: missing `bin`, missing `exports` target, a `workspace:`
-   range, dependency order, a left-out dependency leaving its dependent out, an already-listed version skipped, the
-   read-back's request (no-cache header, changing query). One test packs the real `packages/` after `pnpm build` and
-   passes the check; with `dist/` removed it fails. `tests/workflows/` gains a `publish.yml` test: pnpm set up,
-   install and build run before the script.
-8. **Live proof.** After the last pull request merges, the next `publish` run on `main` is green and
-   `npm pack create-automata@preview` lists `dist/bin.js`; `npm view @automataframework/tools@preview dependencies`
-   (once it is on npm) shows an exact `core` version.
+   range, dependency order, a left-out dependency leaving its dependent out, a template dependency ordering and leaving
+   out `create-automata`, a template base-version mismatch, "cannot publish over" counted as published while any other
+   publish error throws, the read-back's request (no-cache header, changing query) and its one budget. CI's `test` job
+   does not build, so the test runs `pnpm build` itself, then packs every real package into a temporary folder and
+   passes the check; the "`dist/` removed" case works on a temporary copy of one package, never on the real
+   `packages/*/dist`. A temporary pnpm workspace proves `pnpm pack` writes the exact version for `workspace:*`.
+   `tests/workflows/publish.test.ts` (U3): pnpm set up, install and build run before the script.
+8. **Live proof.** After U2 merges, its `publish` run on `main` is green, and: `npm pack create-automata@preview`
+   lists `dist/bin.js`; `npm view @automataframework/tools@preview dependencies` shows an exact `core` preview
+   version; `npm create automata@preview <dir>` then `npm install` in that folder succeeds (once `core`, `2d` and
+   `tools` are on npm); `npm view create-automata@preview dist.attestations` shows a provenance attestation.
 
 ## Units
 
-The rules keep a workflow change out of a pull request that changes code or tests, so three pull requests, on this
-branch one after the other. Both U1 and U2 are lane 3 here (`CLAUDE.md`: "anything that publishes to npm"), so the
-one implementation audit reads both before U2 merges, and U1 also merges only after it.
+The rules keep a workflow change out of a pull request that changes code or tests (`CLAUDE.md` Verification, the
+`ruleMix` hook), and this session may push only to `claude/project-thread-5l49kj`. So the units are separate pull
+requests on that branch, one after the other, each restarted from `main` after the one before merges. This departs
+from `staged-path`'s one implementation pull request; the owner is told.
 
-| Unit | Lane | Files | Waits on | Check |
-|---|---|---|---|---|
-| U1 script | 3 | `scripts/publish-preview.ts`, `tests/scripts/publish-preview.test.ts` | this spec | criteria 2 to 7 (script part) in `bun test` |
-| U2 workflow | 3 | `.github/workflows/publish.yml`, the `this-repo` skill's publish line | U1 merged | criterion 1, then 8 |
-| U3 workflow test | 1 | `tests/workflows/publish.test.ts` | U2 merged | criterion 7 (workflow part) |
+| Order | Unit | Lane | Files | Waits on | Check before merge |
+|---|---|---|---|---|---|
+| 0 | this spec, PR #13 | 1 | the spec, its plan audits | plan audit passes | `gate` green |
+| 1 | U1 script | 3 | `scripts/publish-preview.ts`, `tests/scripts/publish-preview.test.ts` | #13 merged | criteria 2 to 7 in `bun test`; implementation audit of U1's head |
+| 2 | U2 workflow | 3 | `.github/workflows/publish.yml`, the publish line of the `this-repo` skill | U1 merged | criterion 1; implementation audit of U2's head; then criterion 8 on `main` |
+| 3 | U3 workflow test | 1 | `tests/workflows/publish.test.ts` | U2 merged | criterion 7, workflow part |
 
-U3 comes after U2 because a test of `publish.yml` would fail until U2 lands, and a workflow and the test that reads it
-never share a pull request.
+Each lane 3 pull request gets its own implementation audit of its own head commit, so no audit reads a commit that
+cannot yet be a pull request. U2 is built and checked locally while U1 is audited, and pushed the moment U1 merges, so
+its audit starts at once.
 
-Between U1 and U2 merging, one `publish` run uses the new script with the old workflow: nothing is built and pnpm is
-not set up, so it fails before any upload. It is red and publishes nothing, which is the safe way round; it is
-expected and named here so no one records it as flaky. U2's merge starts the run that proves criterion 8.
+Between U1 and U2 merging, `publish` runs use the new script with the old workflow: nothing is built and pnpm is not
+set up, so each fails before any upload. They are red and publish nothing, which is the safe way round; they are
+expected and named here so no one records them as flaky. A merge in that window gets no preview of its own; U2's
+merge publishes one that holds it.
+
+U2 also: installs with `--ignore-scripts` (the job holds `id-token: write`), uses no dependency cache in that job, and
+rewrites the header line that says a re-run "fails on 'cannot publish over'", which criterion 5 makes wrong.
 
 ## Boundaries
 
 - No new dependency: pnpm and npm are already in the stack; `tar` is on GitHub's runners.
 - Not in scope: `npm deprecate` of the broken previews `0.0.1-preview.2` to `.7` (an outside action; the owner may ask
   for it), the Claude Code monthly cap (R2), and the round 2 note on previews landing out of order.
-- Expected duration: about 2 hours of session time, audits included.
+- Expected duration: about 3 hours of session time, three audits and two live runs included.

@@ -13,6 +13,8 @@ import {
   publishOrder,
   publishable,
   tarballProblems,
+  templateMismatches,
+  upload,
   waitForAll,
   withVersion,
   type Manifest,
@@ -297,5 +299,71 @@ describe('waitForAll', () => {
     })
     await expect(run).rejects.toThrow('npm does not serve a@1.0.0 yet. Re-run this run')
     expect(clock).toBe(30_000)
+  })
+})
+
+describe('the template of create-automata', () => {
+  const game = {
+    manifest: { name: 'create-automata', version: '0.0.1' },
+    template: { '@automataframework/core': '__VERSION__', '@automataframework/2d': '__VERSION__', vite: '8.4.0' },
+  }
+  const core = pkg('@automataframework/core')
+  const twoD = pkg('@automataframework/2d', { '@automataframework/core': 'workspace:*' })
+
+  test('puts create-automata after the packages its games install', () => {
+    expect(names(publishOrder([game, twoD, core]))).toEqual([
+      '@automataframework/core',
+      '@automataframework/2d',
+      'create-automata',
+    ])
+  })
+
+  test('leaves create-automata out when a package its games install is left out', () => {
+    const { publish, leftOut } = plan([game, twoD, core], new Set(['create-automata', '@automataframework/core']))
+    expect(names(publish)).toEqual(['@automataframework/core'])
+    expect(leftOut.join('\n')).toContain('create-automata is left out because @automataframework/2d is left out')
+  })
+
+  test('is read from template/package.json in this repo', () => {
+    const found = publishable(join(import.meta.dir, '../..')).find(
+      ({ manifest }) => manifest.name === 'create-automata',
+    )
+    expect(Object.keys(found?.template ?? {})).toContain('@automataframework/core')
+  })
+
+  test('names a package whose base version differs from create-automata, whose games would ask for it', () => {
+    expect(templateMismatches([game, core, twoD])).toEqual([])
+    const ahead = { manifest: { name: '@automataframework/core', version: '0.1.0' } }
+    expect(templateMismatches([game, ahead])).toEqual([
+      'create-automata 0.0.1 makes games that ask for @automataframework/core at its own version, but @automataframework/core is 0.1.0.',
+    ])
+  })
+})
+
+const npmSays =
+  (status: number, stderr = '') =>
+  () => ({ status, stderr })
+
+describe('upload', () => {
+  test('publishes the tarball under the preview tag with provenance', () => {
+    let asked: string[] = []
+    const run = (command: string, args: string[]) => {
+      asked = [command, ...args]
+      return { status: 0, stderr: '' }
+    }
+    expect(upload('/t/a.tgz', '1.0.0-preview.1', run)).toBe('published')
+    expect(asked).toEqual(['npm', 'publish', '/t/a.tgz', '--tag', 'preview', '--access', 'public', '--provenance'])
+  })
+
+  test('counts "cannot publish over" for this version as already published', () => {
+    const stderr =
+      'npm error 403 Forbidden - PUT https://registry.npmjs.org/a - You cannot publish over the previously published versions: 1.0.0-preview.1.'
+    expect(upload('/t/a.tgz', '1.0.0-preview.1', npmSays(1, stderr))).toBe('already')
+  })
+
+  test('stays red on any other failure, or "cannot publish over" for another version', () => {
+    expect(() => upload('/t/a.tgz', '1.0.0-preview.1', npmSays(1, 'npm error 401 Unauthorized'))).toThrow('failed')
+    const other = 'You cannot publish over the previously published versions: 1.0.0-preview.10.'
+    expect(() => upload('/t/a.tgz', '1.0.0-preview.1', npmSays(1, other))).toThrow('failed')
   })
 })

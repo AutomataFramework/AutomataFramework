@@ -10,7 +10,7 @@
 // npm (`npm trust github <package> --file publish.yml ...`), and `NPM_TOKEN` until then. npm tries OIDC first by
 // itself, so nothing here changes when a package moves over. npm stops 2FA-bypass tokens publishing in January 2027,
 // so every package moves to trusted publishing as soon as it first exists on npm.
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -30,10 +30,14 @@ export interface Manifest {
   optionalDependencies?: Record<string, string>
 }
 
+/** A package, with the dependencies its `template/package.json` asks for when it has one (`create-automata`). */
 interface Package {
   dir: string
   manifest: Manifest
+  template?: Record<string, string>
 }
+
+type Item = { manifest: Manifest; template?: Record<string, string> }
 
 type Get = (url: string, init?: RequestInit) => Promise<{ status: number; json?: () => Promise<unknown> }>
 
@@ -61,23 +65,50 @@ export function publishable(root: string): Package[] {
   return dirs
     .map((name) => join(packages, name))
     .flatMap((dir) => {
+      let manifest: Manifest
       try {
-        return [{ dir, manifest: JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as Manifest }]
+        manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as Manifest
       } catch {
         return []
+      }
+      try {
+        const template = JSON.parse(readFileSync(join(dir, 'template/package.json'), 'utf8')) as Manifest
+        return [{ dir, manifest, template: template.dependencies ?? {} }]
+      } catch {
+        return [{ dir, manifest }]
       }
     })
     .filter(({ manifest }) => manifest.private !== true)
     .toSorted((a, b) => a.manifest.name.localeCompare(b.manifest.name))
 }
 
-/** The other packages of this repo that a package depends on. */
-function workspaceDeps(manifest: Manifest, names: Set<string>): string[] {
-  return ranges.flatMap((field) => Object.keys(manifest[field] ?? {})).filter((name) => names.has(name))
+/**
+ * The other packages of this repo that a package depends on, the ones its template asks for included: a game made by
+ * `create-automata` installs them at `create-automata`'s own version, so they must be on npm first.
+ */
+function workspaceDeps({ manifest, template }: Item, names: Set<string>): string[] {
+  const deps = [...ranges.flatMap((field) => Object.keys(manifest[field] ?? {})), ...Object.keys(template ?? {})]
+  return [...new Set(deps)].filter((name) => names.has(name))
+}
+
+const base = (version: string): string => version.split(/[-+]/)[0] ?? ''
+
+/** Template dependencies whose base version differs from their package's, so the template would ask for a version that does not exist. */
+export function templateMismatches(packages: Item[]): string[] {
+  const names = new Set(packages.map(({ manifest }) => manifest.name))
+  const byName = new Map(packages.map(({ manifest }) => [manifest.name, manifest]))
+  return packages.flatMap((item) =>
+    Object.keys(item.template ?? {})
+      .filter((dep) => names.has(dep) && base(byName.get(dep)?.version ?? '') !== base(item.manifest.version))
+      .map(
+        (dep) =>
+          `${item.manifest.name} ${item.manifest.version} makes games that ask for ${dep} at its own version, but ${dep} is ${byName.get(dep)?.version}.`,
+      ),
+  )
 }
 
 /** The packages with every dependency before the packages that depend on it, name order otherwise. */
-export function publishOrder<T extends { manifest: Manifest }>(packages: T[]): T[] {
+export function publishOrder<T extends Item>(packages: T[]): T[] {
   const names = new Set(packages.map(({ manifest }) => manifest.name))
   const byName = new Map(packages.map((item) => [item.manifest.name, item]))
   const done = new Set<string>()
@@ -87,7 +118,7 @@ export function publishOrder<T extends { manifest: Manifest }>(packages: T[]): T
     if (done.has(name)) return
     if (path.includes(name))
       throw new Error(`The packages depend on each other in a circle: ${[...path, name].join(' > ')}.`)
-    for (const dep of workspaceDeps(item.manifest, names).toSorted()) visit(byName.get(dep) as T, [...path, name])
+    for (const dep of workspaceDeps(item, names).toSorted()) visit(byName.get(dep) as T, [...path, name])
     done.add(name)
     order.push(item)
   }
@@ -101,17 +132,14 @@ export function publishOrder<T extends { manifest: Manifest }>(packages: T[]): T
  * publisher only once it exists. A package whose dependency in this repo is left out is left out too, so no preview
  * points at a version that is not on npm.
  */
-export function plan<T extends { manifest: Manifest }>(
-  packages: T[],
-  known: Set<string>,
-): { publish: T[]; leftOut: string[] } {
+export function plan<T extends Item>(packages: T[], known: Set<string>): { publish: T[]; leftOut: string[] } {
   const names = new Set(packages.map(({ manifest }) => manifest.name))
   const out = new Set<string>()
   const publish: T[] = []
   const leftOut: string[] = []
   for (const item of publishOrder(packages)) {
     const { name } = item.manifest
-    const missing = workspaceDeps(item.manifest, names).filter((dep) => out.has(dep))
+    const missing = workspaceDeps(item, names).filter((dep) => out.has(dep))
     if (!known.has(name)) {
       out.add(name)
       leftOut.push(`${name} is not on npm yet, so it is left out: its first version is the owner's step.`)
@@ -190,6 +218,26 @@ export async function listed(
   return one.status === 200
 }
 
+type Run = (command: string, args: string[]) => { status: number | null; stderr: string }
+
+const runNpm: Run = (command, args) => {
+  const result = spawnSync(command, args, { stdio: ['ignore', 'inherit', 'pipe'], encoding: 'utf8' })
+  process.stderr.write(result.stderr)
+  return { status: result.status, stderr: result.stderr }
+}
+
+/**
+ * Uploads one tarball. npm's "cannot publish over" for this exact version means an earlier try uploaded it and npm
+ * does not list it yet (a re-run while npm lags), so it counts as published and the read-back decides.
+ */
+export function upload(tarball: string, version: string, run: Run = runNpm): 'published' | 'already' {
+  const { status, stderr } = run('npm', ['publish', tarball, '--tag', 'preview', '--access', 'public', '--provenance'])
+  if (status === 0) return 'published'
+  const over = /cannot publish over the previously published versions?: (\S+?)\.?(?:\s|$)/i.exec(stderr)
+  if (over?.[1] === version) return 'already'
+  throw new Error(`npm publish of ${tarball} failed.`)
+}
+
 /** The package.json text with only its version changed. */
 export function withVersion(text: string, version: string): string {
   const manifest = JSON.parse(text) as Record<string, unknown>
@@ -235,6 +283,8 @@ async function main(): Promise<void> {
     // oxlint-disable-next-line no-await-in-loop -- a handful of reads, one after another
     if (await onNpm(manifest.name)) known.add(manifest.name)
   }
+  const mismatches = templateMismatches(packages)
+  if (mismatches.length > 0) throw new Error(`Nothing was published:\n${mismatches.join('\n')}`)
   const { publish, leftOut } = plan(packages, known)
   for (const line of leftOut) console.log(line)
   if (publish.length === 0) {
@@ -259,9 +309,9 @@ async function main(): Promise<void> {
       continue
     }
     console.log(`Publishing ${manifest.name}@${manifest.version} under the preview tag.`)
-    execFileSync('npm', ['publish', tarball, '--tag', 'preview', '--access', 'public', '--provenance'], {
-      stdio: 'inherit',
-    })
+    if (upload(tarball, manifest.version) === 'already') {
+      console.log(`npm already took ${manifest.name}@${manifest.version} and does not list it yet.`)
+    }
   }
   await waitForAll(packed.map(({ manifest }) => ({ name: manifest.name, version: manifest.version })))
 }

@@ -285,6 +285,24 @@ describe('waitForAll', () => {
     expect(rounds).toBe(3)
   })
 
+  test('waits for all versions together: one shared wait, not one per package', async () => {
+    let clock = 0
+    let rounds = 0
+    const get = (url: string, init?: RequestInit) => npm(rounds >= 2 ? ['1.0.0', '2.0.0'] : ['1.0.0'])(url, init)
+    const all = ['a', 'b', 'c', 'd'].map((name) => ({ name, version: name === 'a' ? '1.0.0' : '2.0.0' }))
+    await waitForAll(all, {
+      get,
+      now: () => clock,
+      wait: (ms) => {
+        clock += ms
+        rounds += 1
+        return Promise.resolve()
+      },
+    })
+    expect(rounds).toBe(2)
+    expect(clock).toBe(20_000)
+  })
+
   test('fails after the budget, naming what is missing and saying to re-run', async () => {
     let clock = 0
     const wait = (ms: number) => {

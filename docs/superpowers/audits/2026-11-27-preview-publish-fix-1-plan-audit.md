@@ -121,3 +121,87 @@ things a builder would hit:
   preview; R1's fix keeps the window short.
 - N6. "About 2 hours" for three serial pull requests, two lane 3 audits and two live runs is tight; the overrun rule
   applies at 4 hours.
+
+# Round 2 (final)
+
+**36b0ab9 FAIL: 2 red**
+
+- Spec: `docs/superpowers/specs/2026-11-27-preview-publish-fix-design.md` at `36b0ab9`, read whole, plus the diff
+  `7e8d2ca..36b0ab9`. Read against the same sources as round 1, plus what npm and GitHub show now: the registry
+  documents of all four packages, and `publish` run 46010157332 on `main` at `13eebff` (PR #12's merge).
+- Written 2026-11-27 13:58 UTC (from `date`), by a fresh audit session. Read-only apart from this file.
+
+## In short
+
+All four round 1 reds are fixed. Two new reds come from what happened on npm while the plan was being written: the
+owner's first publish of `core`, `2d` and `tools` landed at 13:39 to 13:41 UTC, so the bug the spec says comes "next"
+is live now, and the first real four-package run shows the read-back budget in criterion 6 is too small.
+
+## Round 1 reds
+
+| Red | Fixed? | Where |
+|---|---|---|
+| R1 order deadlock | Yes. Three pull requests one after another on the one branch, each restarted from `main` after the one before merges, each lane 3 one with its own implementation audit of its own head. No audit reads a commit that cannot be a pull request, and a merged branch restarts by fast-forward, so no force-push. | Units, table and paragraphs 1 to 2 |
+| R2 template dependencies | Yes. Criterion 4 reads `template/package.json` for order and leaving out, and fails on a base-version mismatch; criterion 7 tests both; criterion 8 makes a game from the preview and installs it. | Criteria 4, 7, 8 |
+| R3 no build in CI's `test` job | Yes. The test runs `pnpm build` itself, packs into a temporary folder, and removes `dist/` only in a temporary copy. | Criterion 7 |
+| R4 re-run while npm lags | Yes. "cannot publish over" for the exact version counts as published and goes to the read-back; any other error stays red; tested. | Criteria 5, 7 |
+
+Round 1 notes N2 to N5 are taken in (U2's `--ignore-scripts`, no cache, header rewrite; criterion 8's attestation
+check; the U1 to U2 window named). N1 (the departure from one pull request) is said in the spec to be told to the
+owner. N6: the estimate is now 3 hours.
+
+## Red
+
+### R5. Every merge before U2 now ships broken previews of all four packages, and the plan does nothing about it
+
+- UNIT: "The problem, measured", second bullet; the Units order (PR #13 merges first).
+- VERDICT: red.
+- REQUIREMENT: `CLAUDE.md` Report honestly (measured, never stale); the spec's Outcome ("Every preview on npm holds
+  its built files ... workspace ranges are real preview versions").
+- REASON: the spec says `2d` and `tools` "are left out (not on npm)" and that "the next merge would publish them with
+  a range no one can install". That merge has happened. Until U2 lands, every merge to `main`, PR #13's own included,
+  publishes all four packages with no `dist/` and with `workspace:*`, and moves `preview` to them.
+- EVIDENCE: npm lists `@automataframework/core`, `2d` and `tools` `0.0.1` (published 13:39:27, 13:40:17, 13:40:59
+  UTC). Run 46010157332 at `13eebff` published `2d`, `core`, `tools` and `create-automata` `0.0.1-preview.10.sha-13eebff`;
+  `2d@0.0.1-preview.10.sha-13eebff` has `dependencies: {"@automataframework/core":"workspace:*"}` and `dist.fileCount`
+  1 (only `package.json`). `core@0.0.1-preview.8` and `.9` also hold one file. A docs-only merge passes `ci`, so
+  `publish` runs on it too.
+- EXPECTED: no broken preview is published between now and U2's merge, and the spec's measurements are today's.
+- FIX: spec only. Update the second bullet of "The problem, measured" with the facts above. Add a step before PR #13
+  merges: stop `publish` with `gh workflow disable publish.yml -R AutomataFramework/AutomataFramework`, and turn it
+  back on with `gh workflow enable` once U1 has merged (from then on a run fails before any upload, as the Units section
+  says), so U2's merge publishes. Add `0.0.1-preview.8` onward to the previews named under Boundaries for the owner's
+  possible `npm deprecate`. Both commands are reversible repository settings; if the coordinator rules them an outside
+  action, the spec names them for the owner instead.
+
+### R6. The read-back budget is too small for a four-package run on today's npm
+
+- UNIT: criterion 6 (with criterion 2's one-package-at-a-time order).
+- VERDICT: red.
+- REQUIREMENT: the Outcome ("a run that npm is slow to serve can be re-run to green") and criterion 8 (the live run on
+  `main` is green).
+- REASON: criterion 6 waits "after every upload" with "10 minutes for the whole run". Waiting after each upload,
+  package by package, today takes about 10 minutes for four packages, so most runs would end red on the budget, and a
+  re-run (criterion 5) waits the same again for versions npm still has not listed.
+- EVIDENCE: run 46010157332, from its log: upload to "npm serves" took 2m46s (`2d`), 2m44s (`core`), 2m12s (`tools`),
+  2m11s (`create-automata`), 9m58s in all; the job was cancelled by its 10-minute `timeout-minutes` 1 s after the last
+  read-back. npm does not check that a dependency's version exists at upload, and `pnpm pack` has already written the
+  exact versions, so dependents need not wait for their dependencies to be listed.
+- EXPECTED: all uploads first, in dependency order, then one read-back that waits for every version together within
+  the budget, so the run takes about one npm delay, not one per package.
+- FIX: spec only. Criterion 6: "After the last upload, the run waits until npm lists every version of the run,
+  together"; keep the 10-minute budget and the 20-minute job timeout. Criterion 7: the read-back test shows one shared
+  wait, not one per package.
+
+## Notes (not blocking)
+
+- N7. Criterion 2 no longer says `--tag preview`. Today's code has it, and a tarball publish without it would move
+  `latest` (on a package that exists, npm sets `latest` when no tag is given). Name it in criterion 2, test the
+  arguments in criterion 7, and add `npm view <name> dist-tags.latest` is still `0.0.1` to criterion 8.
+- N8. The Units section cites the `ruleMix` hook, but `.claude/hooks/rules.json` has `ruleMix.firstTimeSetup: true`,
+  so `checkRuleMix` returns early and refuses nothing. The split still holds by `CLAUDE.md` Verification alone; the
+  hook claim is wrong. Fixing the hook setting is out of this scope (lane 3, a follow-up).
+- N9. bun's default per-test timeout is 5 s; criterion 7's test that runs `pnpm build` and packs four packages may
+  need its own timeout. The real-pack test must not write the preview version into the real `package.json` files.
+- N10. Run 46010157332 at `13eebff` is red (cancelled at the job timeout after all four uploads). It is this bug, not
+  a new flaky check; the coordinator may add it to the `history.md` flaky entry for `f55432a`.

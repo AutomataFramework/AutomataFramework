@@ -54,4 +54,9 @@ Finished milestones and their decision records, setup, rule changes, standing pe
 
 ## Flaky tests
 
-None yet.
+- `publish` on `main`, run 45966147542 (2026-11-27, commit f55432a): npm took the upload of
+  `create-automata@0.0.1-preview.4.sha-f55432a`, but `waitForNpm` in `scripts/publish-preview.ts` still did not see it
+  after its five-minute read-back, so the run went red. The version is on npm now (`npm view create-automata versions`
+  lists it), and the next runs (`7e242cc`, `98d33e6`) were green with no change. The same wait went red once before at
+  `1c42ed0` (run 45940697237), which #4 answered by stretching the wait from one minute to five. Still open: a fix that
+  does not hang on npm's serving delay (a lane 2 change to `scripts/publish-preview.ts`, with its review).

@@ -1,7 +1,7 @@
 import type { Game, Manifest, State } from '@automataframework/core'
 import { frameCounter } from '../frame-count/frame-count.ts'
 import { fitScale } from '../renderer/fit.ts'
-import { beginFrame, present, startRenderer } from '../renderer/renderer.ts'
+import { beginFrame, present, setResolution, startRenderer } from '../renderer/renderer.ts'
 import { loadTextures } from '../sprites/sprites.ts'
 
 /**
@@ -34,6 +34,9 @@ export async function openStage(options: {
       const scale = fitScale(boxWidth, boxHeight, width, height, options.pixelArt)
       canvas.style.width = `${width * scale}px`
       canvas.style.height = `${height * scale}px`
+      // Pixel art stays at its own size and is grown by whole numbers, which keeps it sharp. Anything else is drawn
+      // at the size it is shown, on this screen's own pixel grid.
+      if (!options.pixelArt) setResolution(scale * (globalThis.devicePixelRatio || 1))
     },
     /** One frame: clears the draw calls, runs the game's `draw`, shows the picture. */
     draw<G>(game: Game<G>, state: State<G>): void {

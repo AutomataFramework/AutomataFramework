@@ -237,3 +237,19 @@ for (const name of ['dark', 'pixel'] as const) {
     await page.screenshot({ path: info.outputPath(`theme-${name}-play.png`) })
   })
 }
+
+test('the game canvas is drawn at the size it is shown, so it is not blurry on a sharp screen', async ({
+  page,
+  game,
+}) => {
+  await open(page, game)
+  await page.evaluate(() => document.fonts.ready)
+  const m = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas')
+    const box = canvas?.getBoundingClientRect()
+    return { backing: canvas?.width ?? 0, shown: box?.width ?? 0, ratio: window.devicePixelRatio }
+  })
+  // Real pixels behind each shown pixel: at least 90% of what the screen can show, and never over the 3x cap.
+  const wanted = Math.min(m.shown * m.ratio, 3 * 640)
+  expect(m.backing).toBeGreaterThanOrEqual(wanted * 0.9)
+})

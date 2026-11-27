@@ -1,0 +1,5 @@
+- Task: fix the flaky core sound test (run 46017760960)
+- Last commit: fade17d
+- Next step: open the PR, then a fresh lane 2 review
+- Open decisions: none
+- Updated: 2026-11-27T15:11:44Z

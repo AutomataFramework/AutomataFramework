@@ -61,6 +61,14 @@ Finished milestones and their decision records, setup, rule changes, standing pe
 
 ## Flaky tests
 
+- `ci` in the merge queue, run 46017760960 (2026-11-27, merge of #17, commit 11d426b): `audio.spec.ts`, "mute(true)
+  puts the master at 0...", read 0.5 for the muted master instead of 0; the same test passed on the pull request heads.
+  Cause: while an `AudioContext` is running, the audio thread writes a gain node's `gain.value` too, so reading it
+  straight after setting it can give the value from before. A loop that set 0.5 then 0 and read back at once in headless
+  Chromium read 0.5 23 times in 80,000; read after three blocks of sound, it read 0 10,000 times in 10,000. Fixed:
+  `createAudio().gain()` answers from the volumes it was given, not from the nodes, and the test reads the nodes only
+  after the audio thread has caught up (400 of 400 runs green). Scope: `packages/core/src/features/audio/audio.ts` and
+  its test, lane 2.
 - `publish` on `main`, run 45966147542 (2026-11-27, commit f55432a): npm took the upload of
   `create-automata@0.0.1-preview.4.sha-f55432a`, but `waitForNpm` in `scripts/publish-preview.ts` still did not see it
   after its five-minute read-back, so the run went red. The version is on npm now (`npm view create-automata versions`

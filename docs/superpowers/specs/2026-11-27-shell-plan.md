@@ -569,15 +569,15 @@ in plain words. Under 30 it fails. When the renderer string names SwiftShader or
 this computer has no graphics chip", and never a pass. The browser is the person's own Chrome when there is one;
 otherwise the tool installs Playwright's Chromium once, saying so.
 
-- [ ] Test first: `registry.test.ts` walks `commands` and fails unless each has a command-line test and an MCP test
+- [x] Test first: `registry.test.ts` walks `commands` and fails unless each has a command-line test and an MCP test
       (criterion 26); the MCP server's tool list equals the names above.
-- [ ] `check.test.ts`: a theme at 4.4 to 1 fails naming both colours, 4.5 passes (criterion 23); a planted key
+- [x] `check.test.ts`: a theme at 4.4 to 1 fails naming both colours, 4.5 passes (criterion 23); a planted key
       fails; a word missing in Spanish fails naming the file and the word (review focus 5); a skill edited by hand
       fails, and `check --fix` puts it back.
-- [ ] `smooth.spec.ts` (criterion 27a; it opens a browser, and so does any `shot` test, `shot.spec.ts`): a planted test game that draws 20,000 sprites fails and names `drawSprite`;
+- [x] `smooth.spec.ts` (criterion 27a; it opens a browser, and so does any `shot` test, `shot.spec.ts`): a planted test game that draws 20,000 sprites fails and names `drawSprite`;
       the template game passes; a forced software renderer gives "not measured". The pass and fail cases run only
       where there is a graphics chip (Examples' pods, in E4); the software case runs in Framework's CI.
-- [ ] `play`, `record`, `replay` tests on the template game: a recorded play replays to the same hash (criterion 27).
+- [x] `play`, `record`, `replay` tests on the template game: a recorded play replays to the same hash (criterion 27).
 - [ ] Implement, commit, pull request, lane 2 review.
 
 ## P7: The agent kit and the two doors

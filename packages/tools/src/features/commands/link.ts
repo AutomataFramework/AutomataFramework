@@ -4,7 +4,9 @@ import { join } from 'node:path'
 import { readToken } from '../github/credential.ts'
 import { type Fetch, github, hostsFor, waitForBuild } from '../github/pages.ts'
 import { describe, gate } from './check.ts'
-import type { Ctx } from './registry.ts'
+import { z } from 'zod'
+import { fail, ok } from '../../lib/result.ts'
+import type { Io } from './registry.ts'
 
 /** Everything `link` reaches outside itself, so a test can stand in for each. */
 export type Deps = {
@@ -14,7 +16,7 @@ export type Deps = {
   sleep(ms: number): Promise<void>
 }
 
-const realDeps = (ctx: Ctx): Deps => ({
+const realDeps = (ctx: Io): Deps => ({
   git: (args) =>
     execFileSync('git', args, { cwd: ctx.cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim(),
   credential: (input) =>
@@ -29,7 +31,7 @@ const realDeps = (ctx: Ctx): Deps => ({
 })
 
 /** Puts the game on a link: the gate, GitHub sign-in, a repo, Pages, a push, then waits for the build. */
-export async function link(ctx: Ctx, deps: Deps = realDeps(ctx)): Promise<number> {
+export async function makeLink(ctx: Io, deps: Deps = realDeps(ctx)): Promise<number> {
   const g = await gate(ctx.cwd)
   if (g.problems.length > 0 || g.keys.length > 0) {
     for (const line of describe(g)) ctx.say(line)
@@ -97,6 +99,13 @@ export async function link(ctx: Ctx, deps: Deps = realDeps(ctx)): Promise<number
   }
   ctx.say(`Your game is live: ${url}`)
   return 0
+}
+
+export const link = {
+  summary: 'Put the game on a link anyone can open.',
+  input: z.object({}),
+  // `makeLink` says every sentence itself, so a refusal adds nothing more.
+  run: async (_input: object, io: Io) => ((await makeLink(io)) === 0 ? ok(null) : fail([])),
 }
 
 const hasCommit = (deps: Deps): boolean => {

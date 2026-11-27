@@ -73,6 +73,7 @@ function standInGithub(bareRoot: string, calls: string[]): Promise<Server> {
 }
 
 test('a newcomer makes a game with one line, plays it, and puts it on a link', async ({ page }) => {
+  test.setTimeout(600_000)
   // 1. Pack the packages and install them outside the repo.
   run(repo, 'pnpm', ['--recursive', '--if-present', 'build'])
   const packs = join(work, 'packs')

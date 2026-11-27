@@ -4,12 +4,17 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: 'packages',
   testMatch: '**/tests/**/*.spec.ts',
-  // The newcomer journey packs and installs real packages, which takes a few minutes the first time.
-  timeout: 600_000,
+  // A test that waits on something that never comes fails in a minute with the line it waited on. The newcomer journey
+  // packs and installs real packages, which takes a few minutes, so it asks for more time itself.
+  timeout: 60_000,
   workers: 1,
   reporter: [['list']],
   // The pinned Playwright image has its own browser. Where one is not at Playwright's path, point this at one.
-  use: { trace: 'off', launchOptions: { executablePath: process.env.AUTOMATA_CHROMIUM || undefined } },
+  use: {
+    trace: 'off',
+    actionTimeout: 15_000,
+    launchOptions: { executablePath: process.env.AUTOMATA_CHROMIUM || undefined },
+  },
   projects: [
     {
       name: 'small-phone',

@@ -39,7 +39,9 @@ What is particular to AutomataFramework.
   request's title or body is edited.
 - `.github/workflows/publish.yml` publishes a preview of every public package in `packages/` after `ci` passes on a
   push to `main` (`scripts/publish-preview.ts`): version `<version>-preview.<run>.sha-<commit>`, dist-tag `preview`,
-  never `latest`. A package npm has never seen is left out: its first version and its trusted publisher are the
+  never `latest`. The job installs (no scripts) and builds; the script packs with pnpm, stops before any upload if a
+  tarball lacks a `bin` or `exports` file or keeps a `workspace:` range, publishes dependencies first (the
+  `create-automata` template's packages count), and can be re-run without uploading twice. A package npm has never seen is left out: its first version and its trusted publisher are the
   owner's step, because npm gives a first version `latest` whatever the tag. npm's trusted publishing (OIDC) signs in for a package that has `publish.yml` as its trusted
   publisher; `NPM_TOKEN` covers the rest until each package has one (npm stops 2FA-bypass tokens in January 2027).
   A new package gets `npm trust github <name> --repo AutomataFramework/AutomataFramework --file publish.yml

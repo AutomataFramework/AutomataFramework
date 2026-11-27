@@ -1,0 +1,36 @@
+{
+  "name": "@automataframework/2d",
+  "version": "0.0.1",
+  "description": "Drawing for 2D games. A stand-in for now. Formats may change.",
+  "license": "MIT",
+  "author": "McThayDT",
+  "homepage": "https://automataframework.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AutomataFramework/AutomataFramework.git",
+    "directory": "packages/2d"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun ../../scripts/build-package.ts"
+  },
+  "dependencies": {
+    "@automataframework/core": "workspace:*"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

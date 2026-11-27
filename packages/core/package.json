@@ -1,0 +1,36 @@
+{
+  "name": "@automataframework/core",
+  "version": "0.0.1",
+  "description": "What a game's update uses: the tick, input, content files and their schemas. Formats may change.",
+  "license": "MIT",
+  "author": "McThayDT",
+  "homepage": "https://automataframework.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AutomataFramework/AutomataFramework.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun ../../scripts/build-package.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.6"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

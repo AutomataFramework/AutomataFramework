@@ -1,0 +1,7 @@
+Make a tiny game that runs in a web browser, in this folder.
+
+- One file, index.html, with everything inside it. No build step and nothing to install.
+- The player moves a square to a goal. Reaching the goal shows a screen that says "You win".
+- It plays by touch on a phone, and by the arrow keys on a computer.
+
+When index.html is finished, stop.

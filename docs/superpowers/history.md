@@ -39,8 +39,9 @@ Finished milestones and their decision records, setup, rule changes, standing pe
     pull requests (this one, then the preview publish, the private-name check and the fresh-agent runs, which put
     workflows and their scripts together); the last of them turns it off, and history names that pull request. With
     it off, the hook judges a whole branch against `main`, so turning it off here would refuse this setup branch. In a cloud environment, paste what
-    `node .claude/hooks/rules.mjs --print-setup` prints into the environment's setup script once (owner step, same
-    batch).
+    `node .claude/hooks/rules.mjs --print-setup` prints into the environment's setup script once (an owner step that
+    is not in the batch script; this project's cloud sessions already load the hooks through the Site repo's
+    launcher).
   - The `verify` skill: **missing** until there is something to start (slice 1a); the file is the kit's template.
 
 ## Standing permissions

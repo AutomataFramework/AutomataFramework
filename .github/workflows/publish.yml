@@ -1,0 +1,53 @@
+# A preview of every public package goes to npm after each merge to `main`, once `ci` has passed on that commit
+# (`scripts/publish-preview.ts`). Previews go under the `preview` dist-tag, so `latest` never moves here.
+#
+# Signing in: npm's trusted publishing (this workflow's OIDC token, `id-token: write`) for each package that has
+# this file as its trusted publisher on npm, and the `NPM_TOKEN` secret for the rest. npm tries OIDC first by itself.
+# npm stops 2FA-bypass tokens publishing in January 2027, so each package gets its trusted publisher as soon as it
+# first exists on npm, and `NPM_TOKEN` is deleted once every package has one.
+#
+# `workflow_run` runs this file as it is on `main`, never a pull request's copy, and only for a push to `main` here,
+# so no fork or pull request can reach the token.
+#
+# There is no concurrency group: each merge's preview is its own version, so runs never clash, and a group would drop
+# a waiting run when a third merge came. A package npm has never seen is left out (its first version, and its trusted
+# publisher, are the owner's step), so CI never sets a package's `latest`. Re-running a finished publish reuses its
+# run number and fails on "cannot publish over", which is safe.
+name: publish
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install --global npm@11.21.3
+      - run: node scripts/publish-preview.ts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_NUMBER: ${{ github.run_number }}

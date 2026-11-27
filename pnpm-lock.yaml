@@ -21,6 +21,8 @@ importers:
         specifier: 1.95.0
         version: 1.95.0
 
+  packages/create-automata: {}
+
 packages:
 
   '@emnapi/core@1.11.2':

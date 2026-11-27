@@ -62,7 +62,9 @@ export function hidePath(path: string, names: readonly string[]): string {
   const has = (text: string): boolean => names.some((name) => squash(text).includes(name))
   if (!has(path)) return path
   const parts = path.split('/').map((part) => (has(part) ? '[hidden]' : part))
-  return parts.some((part) => part === '[hidden]') ? parts.join('/') : '[a hidden path]'
+  const shown = parts.join('/')
+  // A copy of a name may still run across parts that were left alone ("some/name/some-name").
+  return parts.includes('[hidden]') && !has(shown.replaceAll('[hidden]', '/')) ? shown : '[a hidden path]'
 }
 
 /** Where the names are in one piece of text, named `where`. */

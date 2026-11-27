@@ -51,6 +51,7 @@ describe('hidePath', () => {
 
   test('hides the whole path when a name runs across its parts', () => {
     expect(hidePath('quiet/heron.txt', NAMES)).toBe('[a hidden path]')
+    expect(hidePath('Quiet/Heron/Quiet-Heron/x.txt', NAMES)).toBe('[a hidden path]')
   })
 })
 

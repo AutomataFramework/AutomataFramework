@@ -1,0 +1,7 @@
+node_modules/
+dist/
+# Keep keys and passwords out of GitHub, which is public.
+.env
+.env.*
+*.pem
+*.key

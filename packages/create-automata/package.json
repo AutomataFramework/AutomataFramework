@@ -1,7 +1,7 @@
 {
   "name": "create-automata",
   "version": "0.0.1",
-  "description": "Make a game with Automata Framework. Coming soon.",
+  "description": "Make a game with Automata Framework. Formats may change.",
   "license": "MIT",
   "author": "McThayDT",
   "homepage": "https://automataframework.com",
@@ -12,13 +12,23 @@
   },
   "type": "module",
   "bin": {
-    "create-automata": "index.js"
+    "create-automata": "dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "files": [
-    "index.js",
+    "dist",
+    "template",
     "README.md",
     "LICENSE"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
   "engines": {
     "node": ">=24"
   }

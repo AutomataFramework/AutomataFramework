@@ -1,0 +1,39 @@
+{
+  "name": "@automataframework/tools",
+  "version": "0.0.1",
+  "description": "The automata command: check a game and put it on a link. Formats may change.",
+  "license": "MIT",
+  "author": "McThayDT",
+  "homepage": "https://automataframework.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AutomataFramework/AutomataFramework.git",
+    "directory": "packages/tools"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "type": "module",
+  "bin": {
+    "automata": "dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@automataframework/core": "workspace:*"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

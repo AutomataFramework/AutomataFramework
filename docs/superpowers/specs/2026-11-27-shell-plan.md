@@ -345,22 +345,22 @@ printing the "these files will be public" sentence), turns on Pages with `build_
 the game's own workflow, then prints the link once it answers with this commit's build id. Every refusal is one
 plain sentence and what to do.
 
-- [ ] **Test (journey, written first, `packages/tools/tests/journeys/newcomer.spec.ts`, with `playwright.config.ts` and the `test:browser` script):** pack the six packages,
+- [x] **Test (journey, written first, `packages/tools/tests/journeys/newcomer.spec.ts`, with `playwright.config.ts` and the `test:browser` script):** pack the six packages,
       install them in a temp folder outside the repo, run `create-automata my-game`, then `npm run check` (exit 0),
       `npm run build`, serve `dist/` under `/my-game/` as Pages does, and in the small-phone profile wait for ready,
       tap toward the goal and read `state.outcome === 'win'`. Then `npm run link` against a stand-in GitHub, and
       assert the calls: repo, Pages with `build_type: workflow`, push.
-- [ ] Tests under it: `tick.test.ts` (same inputs give the same state; `wasPressed` is true for one tick),
+- [x] Tests under it: `tick.test.ts` (same inputs give the same state; `wasPressed` is true for one tick),
       `load.test.ts` (a mistake in a listed file gives a `Problem` with the file, the line and a fix; a file not
       listed is ignored), `locate.test.ts` (path to line), `find-keys.test.ts` (a planted `sk-...`, a GitHub token
       and a private key block are found; a normal long word is not), `link.test.ts` (refuses a failing check
       and a found key, each with its sentence; with no sign-in it says one plain sentence and makes nothing;
       it never makes a repo before the public sentence).
-- [ ] `tests/no-content.test.ts` (criterion 13): fails on any file under `packages/` ending in an art, sound or font
+- [x] `tests/no-content.test.ts` (criterion 13): fails on any file under `packages/` ending in an art, sound or font
       extension, and on any message file but `packages/shell/messages/{en,es}.json`. A template words file may hold
       the game's name and nothing else.
-- [ ] `scripts/check-line-budgets.ts` with its test (a planted package over its number fails).
-- [ ] Implement, run the journey green, run it once more by hand like a person (the `verify` skill, which this unit
+- [x] `scripts/check-line-budgets.ts` with its test (a planted package over its number fails).
+- [x] Implement, run the journey green, run it once more by hand like a person (the `verify` skill, which this unit
       writes for the repo: how to start the template game and reach its first screen).
 - [ ] Commit, pull request, lane 2 review.
 

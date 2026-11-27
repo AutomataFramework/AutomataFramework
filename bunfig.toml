@@ -2,3 +2,7 @@
 printWidth = 120
 semi = false
 singleQuote = true
+
+[test]
+# `*.spec.ts` files need a browser and run in Playwright (`pnpm test:browser`), not here.
+pathIgnorePatterns = ["**/*.spec.ts", "node_modules/**"]

@@ -12,12 +12,15 @@
     "knip": "knip",
     "typecheck": "bun check",
     "test": "bun test",
-    "build": "pnpm --recursive --if-present build"
+    "build": "pnpm --recursive --if-present build",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
     "@types/bun": "1.4.5",
     "@types/node": "24.19.4",
     "knip": "6.48.0",
-    "oxlint": "1.95.0"
+    "oxlint": "1.95.0",
+    "typescript": "7.0.2",
+    "@playwright/test": "1.65.1"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "name": "__ID__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check": "automata check",
+    "link": "automata link"
+  },
+  "dependencies": {
+    "@automataframework/2d": "__VERSION__",
+    "@automataframework/core": "__VERSION__",
+    "@automataframework/tools": "__VERSION__"
+  },
+  "devDependencies": {
+    "vite": "8.4.0"
+  }
+}

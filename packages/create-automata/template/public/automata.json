@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "id": "__ID__",
+  "name": "__TITLE__",
+  "size": [320, 180],
+  "languages": ["en"],
+  "start": "play",
+  "content": [{ "id": "level", "kind": "level", "path": "content/level.json" }],
+  "assets": []
+}

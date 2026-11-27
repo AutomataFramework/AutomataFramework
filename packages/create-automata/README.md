@@ -1,3 +1,3 @@
 # create-automata
 
-Makes a new game with Automata Framework. It isn't ready yet: see https://automataframework.com.
+Makes a new game with Automata Framework: `npm create automata my-game`. Formats may change.

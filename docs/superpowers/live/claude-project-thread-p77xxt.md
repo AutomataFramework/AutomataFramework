@@ -1,4 +1,0 @@
-- Task: slice 0 lane 3 pull request: preview publish, private-names check, fresh-agent runs
-- Last commit: b4585e6 (at 2026-11-27 04:00 UTC)
-- Next: plan audit, then implementation audit, then the owner's OK, merge, one measured fresh-agent run
-- Open decisions: the second agent's model and the caps (one card, after the measured run)

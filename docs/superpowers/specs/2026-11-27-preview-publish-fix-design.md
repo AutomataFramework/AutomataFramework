@@ -8,8 +8,8 @@ credential step and is not in this brief.
 ## The problem, measured
 
 - `publish.yml` checks out, sets up Node and npm, and runs `node scripts/publish-preview.ts`. Nothing installs or
-  builds, so `dist/` never exists. `create-automata@0.0.1-preview.7.sha-fa9bdf0` holds no `dist/` and is the `preview`
-  tag now: `npm create automata@preview` gets no command (run 46007544289: "No bin file found at dist/bin.js").
+  builds, so `dist/` never exists. `create-automata@0.0.1-preview.7.sha-fa9bdf0` holds no `dist/`, nor does
+  `0.0.1-preview.10.sha-13eebff`, the `preview` tag since run 46010157332: `npm create automata@preview` gets no command (run 46007544289: "No bin file found at dist/bin.js").
 - `npm publish` leaves `workspace:*` as written. `@automataframework/2d` and `tools` depend on
   `@automataframework/core: workspace:*`. The owner's first publish of `core`, `2d` and `tools` `0.0.1` landed at
   13:39 to 13:41 UTC, so every merge since publishes all four packages broken: run 46010157332 at `13eebff` published

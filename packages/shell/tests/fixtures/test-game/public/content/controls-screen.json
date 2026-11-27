@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "id": "controls-screen",
+  "kind": "screen",
+  "above": "settings",
+  "title": "controls",
+  "back": true,
+  "items": [
+    {
+      "type": "list",
+      "from": "controls"
+    }
+  ]
+}

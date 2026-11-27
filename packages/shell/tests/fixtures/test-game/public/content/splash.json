@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "splash",
+  "kind": "screen",
+  "title": "gameName",
+  "layout": "splash",
+  "items": [
+    {
+      "type": "text",
+      "words": "skip"
+    }
+  ]
+}

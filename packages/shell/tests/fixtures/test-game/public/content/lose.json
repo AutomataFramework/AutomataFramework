@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "id": "lose",
+  "kind": "screen",
+  "above": "gameName",
+  "title": "lose",
+  "items": [
+    {
+      "type": "button",
+      "id": "try-again",
+      "label": "tryAgain",
+      "does": "retry",
+      "main": true
+    },
+    {
+      "type": "button",
+      "id": "main-menu",
+      "label": "mainMenu",
+      "does": "main-menu"
+    }
+  ]
+}

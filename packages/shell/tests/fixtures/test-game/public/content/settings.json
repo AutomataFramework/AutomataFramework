@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "id": "settings",
+  "kind": "screen",
+  "title": "settings",
+  "back": true,
+  "items": [
+    {
+      "type": "button",
+      "id": "language",
+      "label": "language",
+      "does": "language",
+      "opens": true,
+      "shows": "language"
+    },
+    {
+      "type": "button",
+      "id": "sound",
+      "label": "sound",
+      "does": "sound",
+      "opens": true
+    },
+    {
+      "type": "button",
+      "id": "controls",
+      "label": "controls",
+      "does": "controls",
+      "opens": true
+    },
+    {
+      "type": "steps",
+      "id": "text-size",
+      "label": "textSize",
+      "setting": "textSize",
+      "levels": ["textNormal", "textBig", "textBigger", "textBiggest"]
+    },
+    {
+      "type": "steps",
+      "id": "contrast",
+      "label": "contrast",
+      "setting": "contrast",
+      "levels": ["contrastNormal", "contrastMore", "contrastMost"]
+    },
+    {
+      "type": "steps",
+      "id": "motion",
+      "label": "motion",
+      "setting": "motion",
+      "levels": ["motionNormal", "motionLess", "motionNone"]
+    },
+    {
+      "type": "switch",
+      "id": "frame-counter",
+      "label": "frameCounter",
+      "setting": "frameCounter"
+    }
+  ]
+}

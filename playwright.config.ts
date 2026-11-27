@@ -15,5 +15,14 @@ export default defineConfig({
       name: 'small-phone',
       use: { ...devices['Pixel 5'], viewport: { width: 360, height: 640 }, browserName: 'chromium' },
     },
+    // The shell's own tests run on three profiles: a small phone, a tablet (WebKit, Safari's engine) and a computer.
+    { name: 'tablet', testMatch: '**/shell/tests/journeys/shell.spec.ts', use: { ...devices['iPad (gen 7)'] } },
+    {
+      name: 'computer',
+      testMatch: '**/shell/tests/journeys/shell.spec.ts',
+      use: { browserName: 'chromium', viewport: { width: 1280, height: 720 } },
+    },
+    // The look check also runs on a phone in WebKit.
+    { name: 'phone-webkit', testMatch: '**/shell/tests/journeys/look.spec.ts', use: { ...devices['iPhone SE'] } },
   ],
 })

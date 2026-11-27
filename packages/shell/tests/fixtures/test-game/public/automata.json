@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "id": "test-game",
+  "name": "Test Game",
+  "size": [640, 360],
+  "languages": ["en", "es"],
+  "start": "menu",
+  "content": [
+    {
+      "id": "level",
+      "kind": "level",
+      "path": "content/level.json"
+    },
+    {
+      "id": "controls",
+      "kind": "controls",
+      "path": "content/controls.json"
+    },
+    {
+      "id": "flow",
+      "kind": "flow",
+      "path": "content/flow.json"
+    },
+    {
+      "id": "hud",
+      "kind": "hud",
+      "path": "content/hud.json"
+    },
+    {
+      "id": "splash",
+      "kind": "screen",
+      "path": "content/splash.json"
+    },
+    {
+      "id": "menu",
+      "kind": "screen",
+      "path": "content/menu.json"
+    },
+    {
+      "id": "pause",
+      "kind": "screen",
+      "path": "content/pause.json"
+    },
+    {
+      "id": "settings",
+      "kind": "screen",
+      "path": "content/settings.json"
+    },
+    {
+      "id": "language",
+      "kind": "screen",
+      "path": "content/language.json"
+    },
+    {
+      "id": "sound",
+      "kind": "screen",
+      "path": "content/sound.json"
+    },
+    {
+      "id": "controls-screen",
+      "kind": "screen",
+      "path": "content/controls-screen.json"
+    },
+    {
+      "id": "win",
+      "kind": "screen",
+      "path": "content/win.json"
+    },
+    {
+      "id": "lose",
+      "kind": "screen",
+      "path": "content/lose.json"
+    },
+    {
+      "id": "credits-screen",
+      "kind": "screen",
+      "path": "content/credits-screen.json"
+    },
+    {
+      "id": "credits",
+      "kind": "credits",
+      "path": "content/credits.json"
+    }
+  ],
+  "assets": []
+}

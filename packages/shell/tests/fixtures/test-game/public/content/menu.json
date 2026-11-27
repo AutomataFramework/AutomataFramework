@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "id": "menu",
+  "kind": "screen",
+  "title": "gameName",
+  "items": [
+    {
+      "type": "button",
+      "id": "continue",
+      "label": "continue",
+      "does": "continue",
+      "main": true,
+      "when": "has-save"
+    },
+    {
+      "type": "button",
+      "id": "new-game",
+      "label": "newGame",
+      "does": "new-game",
+      "main": true
+    },
+    {
+      "type": "button",
+      "id": "settings",
+      "label": "settings",
+      "does": "settings",
+      "opens": true
+    }
+  ]
+}

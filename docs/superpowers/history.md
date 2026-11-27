@@ -58,6 +58,11 @@ Finished milestones and their decision records, setup, rule changes, standing pe
   unfake.js 1.4.0 (commit 6636868), whose built core includes `imagequant` (GPL-3.0-or-later), so
   `@automataframework/art` is GPL-3.0-or-later. Every other package stays MIT; games never load `/art`, and the
   pictures it makes are not covered. Scope: unit A1, pull request #15.
+- 2026-11-27 15:26 UTC, the Owner (decision card "Ship the look's two fonts as two pinned npm font packages?", answered
+  "Two npm font packages"; decision `cmsg_015qSNRrgZWSCwn9M1iFmFZJFuA4VZrxAnfJYahXpuGpVk`, relayed by the coordinator
+  at 15:27 UTC): `@fontsource-variable/bricolage-grotesque` 5.3.0 and `@fontsource-variable/figtree` 5.3.0 (both OFL-1.1)
+  are `devDependencies` of `/shell`, used by its test game only. No font file is added under `packages/`. The new game
+  template's way of getting the fonts is P7's.
 
 ## Flaky tests
 

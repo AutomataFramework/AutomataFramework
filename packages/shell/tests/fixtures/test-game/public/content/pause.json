@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "id": "pause",
+  "kind": "screen",
+  "above": "gameName",
+  "title": "paused",
+  "items": [
+    {
+      "type": "button",
+      "id": "resume",
+      "label": "resume",
+      "does": "resume",
+      "main": true
+    },
+    {
+      "type": "button",
+      "id": "settings",
+      "label": "settings",
+      "does": "settings",
+      "opens": true
+    },
+    {
+      "type": "button",
+      "id": "main-menu",
+      "label": "mainMenu",
+      "does": "main-menu"
+    }
+  ]
+}

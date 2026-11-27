@@ -13,9 +13,10 @@
     "skipLibCheck": true,
     "types": ["node", "bun"],
     "paths": {
+      "@automataframework/core/browser": ["./packages/core/src/browser.ts"],
       "@automataframework/*": ["./packages/*/src/index.ts"]
     }
   },
   "include": ["scripts", "tests", "packages"],
-  "exclude": ["packages/create-automata/template", "**/dist"]
+  "exclude": ["packages/create-automata/template", "packages/shell/tests/fixtures/test-game", "**/dist"]
 }

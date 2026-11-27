@@ -98,6 +98,7 @@ test('a newcomer makes a game with one line, plays it, and puts it on a link', a
   // The game asks npm for these packages by version; here they come from the tarballs just made.
   const manifest = JSON.parse(readFileSync(join(game, 'package.json'), 'utf8')) as {
     dependencies: Record<string, string>
+    overrides?: Record<string, string>
   }
   for (const name of ['core', '2d', 'tools'])
     manifest.dependencies[`@automataframework/${name}`] = `file:${tarballs[name]}`
@@ -124,6 +125,12 @@ test('a newcomer makes a game with one line, plays it, and puts it on a link', a
     await page.mouse.down()
     await page.waitForFunction(() => (window as any)['__automata'].state().outcome === 'win')
     await page.mouse.up()
+    // The same game with keys alone: the arrow keys move the square.
+    await page.reload()
+    await page.waitForFunction(() => (window as any)['__automata']?.ready === true)
+    await page.keyboard.down('ArrowRight')
+    await page.waitForFunction(() => (window as any)['__automata'].state().game.x > 60)
+    await page.keyboard.up('ArrowRight')
   } finally {
     pages.close()
   }

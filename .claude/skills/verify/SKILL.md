@@ -1,40 +1,50 @@
 ---
 name: verify
-description: Use when a change alters what the product does, before calling it done and before each commit that changes behavior: starts this repo's app or game from a clean checkout and drives it the way a person would.
+description: "Use when a change alters what the product does, before calling it done and before each commit that changes behavior: starts this repo's app or game from a clean checkout and drives it the way a person would."
 ---
 
 # Verify
 
-<the product in one line>
+The product is the newcomer's path: `npm create automata my-game` makes a small 2D game (move a square to the yellow one), it plays in a browser, and `npm run link` puts it on a link. The repo itself has no app; the thing to run is a game made from the packed packages.
 
 ## Start it
 
-From a clean checkout in a cloud container, in order. First pick the Node version (or other runtime) that `engines` in `package.json` asks for. Then install, build, and start every stand-in for an outside service (a database, payments, mail, sign-in), never the real one.
+From a clean checkout in a cloud container. Node 24 is what `engines` asks for; the container's Node 22 runs it too, with a warning.
 
-<start commands>
+```
+pnpm install --frozen-lockfile
+pnpm build                                  # builds every package into its dist/
+mkdir -p /tmp/v/packs && for p in core 2d tools create-automata; do (cd packages/$p && pnpm pack --pack-destination /tmp/v/packs); done
+cd /tmp/v && npm init -y && npm install --no-audit --no-fund packs/*.tgz
+npx --no-install create-automata my-game && cd my-game
+```
 
-It is ready when <ready signal>. Last clean start, timed with `date` before and after: <start time>, on commit <commit>.
+The new game asks npm for the packages by version, and the packages are not on npm yet, so point them at the tarballs: in `my-game/package.json` set each `@automataframework/*` dependency to `file:/tmp/v/packs/automataframework-<name>-0.0.1.tgz` and add `"overrides": { "@automataframework/core": "file:/tmp/v/packs/automataframework-core-0.0.1.tgz" }` so there is one copy of core. Then `npm install --no-audit --no-fund` and `npm run dev -- --port 5199`.
+
+`pnpm test:browser` does all of this by itself, and the steps below are the by-hand version of what it checks.
+
+It is ready when `curl localhost:5199` answers and the page sets `window.__automata.ready` to true. Last clean start, timed with `date` before and after (dev server up, page ready, win by keys): 3.1 seconds, on commit e12da6c plus the keyboard fix.
 
 ## Drive it
 
-Open it in a real browser: the Chromium and Playwright the container already has (`require('playwright')`, then `chromium.launch()`), at the sizes the change affects (see "Shoot what the change touches" in `visual-check`). Tap, click, type and press keys the way a person would, and find things by their label or role. Take a screenshot at deviceScaleFactor 1 for your own check, and save it in the scratchpad, never in the repo. The main screen, what it shows and how to use it:
+Open it in the container's Chromium (`require('playwright')`, `chromium.launch({ executablePath })`; this repo's Playwright 1.65.1 wants a browser build the container may not have, so set `AUTOMATA_CHROMIUM` to the one in `/opt/pw-browsers/chromium-*/chrome-linux64/chrome`). Use a 360 by 640 phone viewport and a 900 by 600 computer one. Take screenshots at deviceScaleFactor 1 into the scratchpad.
 
-<main screen>
+The main screen is one canvas: a white square at the top left and a yellow one at the bottom right, on dark blue. Hold a finger or the mouse down on the screen and the white square goes toward it; the arrow keys move it too. Reaching the yellow square ends the game (`window.__automata.state().outcome` is `'win'`).
 
 ## The journeys
 
-One line each, from a person's side: where it starts, the steps, and what they see at the end.
-
-<journeys>
+- Keys: open the page, hold ArrowRight until the square is past x 254, hold ArrowDown. At the end `outcome` is `'win'`.
+- Touch: in the phone viewport put the mouse down on the yellow square and wait. `outcome` is `'win'`.
+- Mistake: change `"goal"` in `public/content/level.json` to `"far"`, run `npm run check`. It says `public/content/level.json, line 5` and what to change, and exits 1. Reload the page: the same message is shown and no game starts.
+- Link: `npm run link` with no GitHub sign-in prints one plain sentence and makes nothing. With a stand-in GitHub it makes the repo, turns Pages on from a workflow, and pushes (the journey test does this).
 
 ## Stop it
 
-Stop every server it started and clear what it wrote, so the next run starts clean.
-
-<stop commands>
+Stop the dev server (`pkill -f "vite --port 5199"`) and `rm -rf /tmp/v`.
 
 ## When it breaks
 
-A step that breaks or flakes is fixed in this skill first. Each known way a start or a step fails, what it looks like, and the fix:
-
-<known failures>
+- The page stays blank and `__automata` is missing: the browser console says why. Two copies of `@automataframework/core` (a version that is not the tarball's) make `content()` fail with "No content file level is loaded". Fix the overrides above.
+- `file:undefined` in `node_modules/@automataframework`: a tarball name was not found; check `ls /tmp/v/packs`.
+- Playwright says its browser "doesn't exist": set `AUTOMATA_CHROMIUM`.
+- `npm run link` hangs against a stand-in: the stand-in must answer from another process or an async call, not from a blocked one.

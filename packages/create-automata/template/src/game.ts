@@ -13,10 +13,8 @@ export const game: Game<Mine> = {
       ? [stick('pointer')[0] - me.x - 8, stick('pointer')[1] - me.y - 8]
       : stick('move')
     const length = Math.hypot(dx, dy) || 1
-    if (length > 3) {
-      me.x += (dx / length) * 3
-      me.y += (dy / length) * 3
-    }
+    me.x += (dx / length) * 3
+    me.y += (dy / length) * 3
     if (Math.hypot(me.goal[0] - me.x, me.goal[1] - me.y) < 12) win(state)
     return state
   },

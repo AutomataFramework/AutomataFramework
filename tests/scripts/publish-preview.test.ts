@@ -1,8 +1,22 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
-import { onNpm, previewVersion, publishable, withVersion } from '../../scripts/publish-preview.ts'
+import { execFileSync } from 'node:child_process'
+import {
+  listed,
+  onNpm,
+  pack,
+  plan,
+  previewVersion,
+  promisedFiles,
+  publishOrder,
+  publishable,
+  tarballProblems,
+  waitForAll,
+  withVersion,
+  type Manifest,
+} from '../../scripts/publish-preview.ts'
 
 describe('previewVersion', () => {
   test('adds the run and the short commit to the base version', () => {
@@ -94,5 +108,194 @@ describe('withVersion', () => {
       version: '0.0.1-preview.1.sha-abcdef0',
       bin: { 'create-automata': 'index.js' },
     })
+  })
+})
+
+const pkg = (name: string, dependencies: Record<string, string> = {}): { manifest: Manifest } => ({
+  manifest: { name, version: '0.0.1', dependencies },
+})
+const names = (items: { manifest: Manifest }[]): string[] => items.map(({ manifest }) => manifest.name)
+
+describe('publishOrder', () => {
+  test('puts a dependency before the packages that use it, whatever their names', () => {
+    const order = publishOrder([
+      pkg('@automataframework/2d', { '@automataframework/core': 'workspace:*' }),
+      pkg('@automataframework/core', { zod: '4.6.6' }),
+      pkg('@automataframework/tools', { '@automataframework/core': 'workspace:*' }),
+      pkg('create-automata'),
+    ])
+    expect(names(order)).toEqual([
+      '@automataframework/core',
+      '@automataframework/2d',
+      '@automataframework/tools',
+      'create-automata',
+    ])
+  })
+
+  test('refuses packages that depend on each other in a circle', () => {
+    expect(() => publishOrder([pkg('a', { b: 'workspace:*' }), pkg('b', { a: 'workspace:*' })])).toThrow('circle')
+  })
+})
+
+describe('plan', () => {
+  const all = [
+    pkg('@automataframework/2d', { '@automataframework/core': 'workspace:*' }),
+    pkg('@automataframework/core'),
+    pkg('create-automata'),
+  ]
+
+  test('leaves out a package npm has never seen, and every package that depends on it', () => {
+    const { publish, leftOut } = plan(all, new Set(['@automataframework/2d', 'create-automata']))
+    expect(names(publish)).toEqual(['create-automata'])
+    expect(leftOut.join('\n')).toContain('@automataframework/core is not on npm yet')
+    expect(leftOut.join('\n')).toContain('@automataframework/2d is left out because @automataframework/core')
+  })
+
+  test('publishes everything npm has, dependencies first', () => {
+    const { publish, leftOut } = plan(all, new Set(names(all)))
+    expect(names(publish)).toEqual(['@automataframework/core', '@automataframework/2d', 'create-automata'])
+    expect(leftOut).toEqual([])
+  })
+})
+
+describe('promisedFiles and tarballProblems', () => {
+  const manifest: Manifest = {
+    name: 'create-automata',
+    version: '0.0.1',
+    bin: { 'create-automata': 'dist/bin.js' },
+    exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' } },
+    dependencies: { zod: '4.6.6' },
+  }
+
+  test('lists every bin and exports target once, without "./"', () => {
+    expect(promisedFiles(manifest)).toEqual(['dist/bin.js', 'dist/index.d.ts', 'dist/index.js'])
+    expect(promisedFiles({ name: 'x', version: '1.0.0', bin: 'cli.js', main: './a.js', types: 'a.d.ts' })).toEqual([
+      'cli.js',
+      'a.js',
+      'a.d.ts',
+    ])
+  })
+
+  test('is happy with a tarball that holds every promised file', () => {
+    const files = ['package/package.json', 'package/dist/bin.js', 'package/dist/index.js', 'package/dist/index.d.ts']
+    expect(tarballProblems(manifest, files)).toEqual([])
+  })
+
+  test('names a missing bin file and a missing exports file', () => {
+    const problems = tarballProblems(manifest, ['package/package.json', 'package/dist/index.d.ts'])
+    expect(problems).toEqual([
+      'create-automata: the tarball has no dist/bin.js, which its package.json promises.',
+      'create-automata: the tarball has no dist/index.js, which its package.json promises.',
+    ])
+  })
+
+  test('names a workspace range left in', () => {
+    const left: Manifest = { name: 'create-automata', version: '0.0.1', dependencies: { core: 'workspace:*' } }
+    expect(tarballProblems(left, [])).toEqual(['create-automata: dependencies still says core@workspace:*.'])
+  })
+})
+
+describe('pack, on the real packages', () => {
+  const root = join(import.meta.dir, '../..')
+  const into = mkdtempSync(join(tmpdir(), 'packed-'))
+  execFileSync('pnpm', ['build'], { cwd: root, stdio: 'ignore' })
+
+  test('every built package packs with all its files and no workspace range', () => {
+    const packages = publishable(root)
+    expect(packages.length).toBeGreaterThan(0)
+    for (const { dir } of packages) {
+      const { manifest, files } = pack(dir, into)
+      expect(tarballProblems(manifest, files)).toEqual([])
+    }
+  }, 60_000)
+
+  test('a package without its built files fails the check, as an unbuilt run would', () => {
+    const copy = join(mkdtempSync(join(tmpdir(), 'unbuilt-')), 'create-automata')
+    cpSync(join(root, 'packages/create-automata'), copy, { recursive: true })
+    rmSync(join(copy, 'dist'), { recursive: true, force: true })
+    const { manifest, files } = pack(copy, into)
+    expect(tarballProblems(manifest, files)).toContain(
+      'create-automata: the tarball has no dist/bin.js, which its package.json promises.',
+    )
+  }, 60_000)
+
+  test('pnpm writes the exact version of a dependency in place of workspace:*', () => {
+    const workspace = mkdtempSync(join(tmpdir(), 'workspace-'))
+    writeFileSync(join(workspace, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n')
+    writeFileSync(join(workspace, 'package.json'), '{"name":"root","private":true}')
+    for (const [name, deps] of [
+      ['base', {}],
+      ['user', { base: 'workspace:*' }],
+    ] as const) {
+      mkdirSync(join(workspace, 'packages', name, 'dist'), { recursive: true })
+      writeFileSync(join(workspace, 'packages', name, 'dist/index.js'), '')
+      const version = name === 'base' ? '0.0.1-preview.9.sha-abcdef0' : '0.0.1'
+      const manifest = { name, version, exports: './dist/index.js', files: ['dist'], dependencies: deps }
+      writeFileSync(join(workspace, 'packages', name, 'package.json'), JSON.stringify(manifest))
+    }
+    // pnpm reads the dependency's version through its link in node_modules, as after the workflow's install.
+    execFileSync('pnpm', ['install', '--offline'], { cwd: workspace, stdio: 'ignore' })
+    const { manifest, files } = pack(join(workspace, 'packages/user'), into)
+    expect(manifest.dependencies).toEqual({ base: '0.0.1-preview.9.sha-abcdef0' })
+    expect(tarballProblems(manifest, files)).toEqual([])
+  }, 60_000)
+})
+
+const npm =
+  (lists: string[], one: number = 404, asked: { url: string; init?: RequestInit | undefined }[] = []) =>
+  (url: string, init?: RequestInit) => {
+    asked.push({ url, init })
+    if (/\/[^/?]+\?fresh=/.test(url.replace('https://registry.npmjs.org/', ''))) return Promise.resolve({ status: one })
+    const versions = Object.fromEntries(lists.map((version) => [version, {}]))
+    return Promise.resolve({ status: 200, json: () => Promise.resolve({ versions }) })
+  }
+
+describe('listed', () => {
+  test('is true once the package lists the version, asking past any cache with a fresh query', async () => {
+    const asked: { url: string; init?: RequestInit | undefined }[] = []
+    expect(await listed('@automataframework/core', '0.0.1-preview.9', npm(['0.0.1-preview.9'], 404, asked), '7')).toBe(
+      true,
+    )
+    expect(asked[0]?.url).toBe('https://registry.npmjs.org/@automataframework%2fcore?fresh=7')
+    expect(asked[0]?.init?.headers).toEqual({ 'cache-control': 'no-cache' })
+  })
+
+  test('falls back to the version page, and is false when neither has it', async () => {
+    expect(await listed('create-automata', '0.0.2', npm([], 200))).toBe(true)
+    expect(await listed('create-automata', '0.0.2', npm([], 404))).toBe(false)
+  })
+})
+
+describe('waitForAll', () => {
+  test('waits for every version within one budget and then passes', async () => {
+    let clock = 0
+    let rounds = 0
+    const get = (url: string, init?: RequestInit) => npm(rounds >= 3 ? ['1.0.0'] : [])(url, init)
+    await waitForAll([{ name: 'a', version: '1.0.0' }], {
+      get,
+      now: () => clock,
+      wait: (ms) => {
+        clock += ms
+        rounds += 1
+        return Promise.resolve()
+      },
+    })
+    expect(rounds).toBe(3)
+  })
+
+  test('fails after the budget, naming what is missing and saying to re-run', async () => {
+    let clock = 0
+    const wait = (ms: number) => {
+      clock += ms
+      return Promise.resolve()
+    }
+    const run = waitForAll([{ name: 'a', version: '1.0.0' }], {
+      get: npm([]),
+      now: () => clock,
+      wait,
+      budgetMs: 30_000,
+    })
+    await expect(run).rejects.toThrow('npm does not serve a@1.0.0 yet. Re-run this run')
+    expect(clock).toBe(30_000)
   })
 })

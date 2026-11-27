@@ -446,21 +446,21 @@ function browserStore(): KeyValue                   // localStorage, or memory w
 
 A save file is `{ format: 1, id, game, savedAt, tick, state }`. Saves and plays go through `upgrade`.
 
-- [ ] **Tests first (property tests with our own seeded loop, 500 cases each, no library):** save then read gives back
+- [x] **Tests first (property tests with our own seeded loop, 500 cases each, no library):** save then read gives back
       the same state; export then import gives the same state; `replayPlay` of a recorded play gives the same hash,
       10 times; `upgrade` twice is the same as once. `tests/node-only.test.ts` imports the main entry in plain Node
       and fails on any `window`, `document`, `pixi.js` or `svelte` reference.
-- [ ] `saves.test.ts`: a broken file gives a plain `Problem` and every other slot still reads (criterion 7);
+- [x] `saves.test.ts`: a broken file gives a plain `Problem` and every other slot still reads (criterion 7);
       **review focus 1:** a store that throws on `set` makes `canStore()` false and nothing else throws;
       **review focus 4:** importing a save whose `game` differs, or whose `format` is newer, is refused with a plain
       sentence and the slot keeps its bytes.
-- [ ] `upgrade.test.ts`: a made-up kind at format 0 with one step reaches format 1; a missing step is a `Problem`.
-- [ ] `input.spec.ts`: touch beats pad beats keys when two are used in the same tick; a held action
+- [x] `upgrade.test.ts`: a made-up kind at format 0 with one step reaches format 1; a missing step is a `Problem`.
+- [x] `input.spec.ts`: touch beats pad beats keys when two are used in the same tick; a held action
       marked tap fires on one press and stays on until the next (criterion 5); player 2 reads only player 2's pad
       and keys.
-- [ ] `audio.spec.ts`: `setGain('music', 0.3)` reads back 0.3 from the gain node; `mute(true)` puts
+- [x] `audio.spec.ts`: `setGain('music', 0.3)` reads back 0.3 from the gain node; `mute(true)` puts
       the master at 0 (criterion 4).
-- [ ] Implement, commit, pull request, lane 2 review.
+- [x] Implement, commit, pull request, lane 2 review.
 
 ## P4: Shell: screens from files
 

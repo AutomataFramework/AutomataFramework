@@ -17,13 +17,13 @@ export function layerProblems(src: string, layers: string[]): string[] {
     const parts = relative(src, path).split(sep)
     return parts[0] === 'features' ? (parts[1] ?? '') : (parts[0] ?? '')
   }
-  const known = new Set(['lib', 'index.ts', 'bin.ts', ...layers])
+  const known = new Set(['lib', 'index.ts', 'bin.ts', 'browser.ts', ...layers])
   for (const file of files(src)) {
     const from = owner(file)
     if (!known.has(from)) problems.push(`${relative(src, file)} sits in "${from}", which is not in the layer list.`)
     for (const match of readFileSync(file, 'utf8').matchAll(/from '(\.[^']*)'/g)) {
       const to = owner(resolve(file, '..', match[1] ?? ''))
-      if (to === from || from === 'index.ts' || from === 'bin.ts') continue
+      if (to === from || from === 'index.ts' || from === 'bin.ts' || from === 'browser.ts') continue
       const ok = to === 'lib' || (layers.includes(to) && layers.indexOf(to) < layers.indexOf(from))
       if (!ok) problems.push(`${relative(src, file)} imports ${match[1]}: "${from}" may not use "${to}".`)
     }

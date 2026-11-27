@@ -1,6 +1,7 @@
 // Criterion 20, as far as P1 can: pack the packages, install them outside the repo, make a game with one line,
 // check it, build it, play it to a win in a small phone, then put it on a link against a stand-in GitHub.
-import { execFileSync } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
+import { promisify } from 'node:util'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { type Server, type ServerResponse, createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -139,11 +140,16 @@ test('a newcomer makes a game with one line, plays it, and puts it on a link', a
     `[user]\n\tname = Newcomer\n\temail = newcomer@example.com\n[credential]\n\thelper = "!f() { echo username=newcomer; echo password=ghp_standin_token_for_tests_only_000000000; }; f"\n`,
   )
   try {
-    const out = run(game, 'npm', ['run', 'link'], {
-      AUTOMATA_TEST_GITHUB: base,
-      AUTOMATA_TEST_GIT: bareRoot,
-      GIT_CONFIG_GLOBAL: gitConfig,
-      GIT_CONFIG_NOSYSTEM: '1',
+    // Not the blocking `run`: the stand-in GitHub answers from this same process.
+    const { stdout: out } = await promisify(execFile)('npm', ['run', 'link'], {
+      cwd: game,
+      env: {
+        ...process.env,
+        AUTOMATA_TEST_GITHUB: base,
+        AUTOMATA_TEST_GIT: bareRoot,
+        GIT_CONFIG_GLOBAL: gitConfig,
+        GIT_CONFIG_NOSYSTEM: '1',
+      },
     })
     expect(out).toContain(`${base}/pages/newcomer/my-game/`)
     expect(out.indexOf('public')).toBeGreaterThan(-1)

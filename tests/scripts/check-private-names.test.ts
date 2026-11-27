@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseNames, scanText, selfTest, squash } from '../../scripts/check-private-names.ts'
+import { hidePath, parseNames, scanText, selfTest, squash } from '../../scripts/check-private-names.ts'
 
 // Made-up names, so this test never holds a real one.
 const NAMES = parseNames('Quiet Heron, moss-lantern')
@@ -39,6 +39,18 @@ describe('scanText', () => {
     expect(scanText('f.ts', 'a quiet room with a heron-free lantern', NAMES)).toEqual([])
     const found = scanText('f.ts', 'Quiet Heron', NAMES)
     expect(JSON.stringify(found).toLowerCase()).not.toContain(squash('Quiet Heron'))
+  })
+})
+
+describe('hidePath', () => {
+  test('hides each part of a path that holds a name, in any spelling', () => {
+    expect(hidePath('games/Quiet-Heron/a.txt', NAMES)).toBe('games/[hidden]/a.txt')
+    expect(hidePath('MOSS_LANTERN.md', NAMES)).toBe('[hidden]')
+    expect(hidePath('games/plain/a.txt', NAMES)).toBe('games/plain/a.txt')
+  })
+
+  test('hides the whole path when a name runs across its parts', () => {
+    expect(hidePath('quiet/heron.txt', NAMES)).toBe('[a hidden path]')
   })
 })
 
@@ -107,6 +119,22 @@ describe('the command', () => {
     const result = run(dir, env, '--prompt', 'prompt.txt')
     expect(result.code).toBe(1)
     expect(result.out).toContain('the prompt prompt.txt')
+  })
+
+  test('prints no name, in any spelling, when one is in a path', () => {
+    const dir = repo('hello', 'Start')
+    mkdirSync(join(dir, 'games', 'Quiet-Heron'), { recursive: true })
+    writeFileSync(join(dir, 'games', 'Quiet-Heron', 'a.txt'), 'the Moss Lantern')
+    execFileSync('git', ['add', '.'], { cwd: dir })
+    const result = run(dir, env)
+    expect(result.code).toBe(1)
+    expect(result.out).toContain('the path games/[hidden]/a.txt')
+    expect(result.out).toContain('the file games/[hidden]/a.txt, line 1')
+    expect(squash(result.out.replace(/::add-mask::.*\n/g, ''))).not.toMatch(/quietheron|mosslantern/)
+  })
+
+  test('says plainly what to do on a fork', () => {
+    expect(run(repo('hello', 'Start'), { PRIVATE_NAMES: '' }).out).toContain('a maintainer will bring your change')
   })
 
   test('fails when the secret is missing, and prints no name', () => {

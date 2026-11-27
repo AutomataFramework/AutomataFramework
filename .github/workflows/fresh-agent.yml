@@ -4,6 +4,12 @@
 # one pinned non-Claude model. Slice 0 has no skills yet, so its prompt (`fresh-agent/slice0.txt`) is a stand-in
 # one-page game, run to measure the cost; from slice 1a the prompt gives only the skills.
 #
+# Spend has a hard ceiling on both: Claude Code stops each run at $2 (`--max-budget-usd`), and OpenCode runs only when
+# the OpenRouter key has a credit limit with at most $10 left on it, which the owner sets on OpenRouter.
+#
+# The agents run with every permission and their key in their environment, so nothing they write is trusted: only
+# index.html and report.json are kept, for 7 days, and the run fails before keeping them if either holds a key.
+#
 # It costs money, so it runs only when someone with write access starts it:
 #   gh workflow run fresh-agent.yml -R AutomataFramework/AutomataFramework -f runs=1
 name: fresh-agent
@@ -33,6 +39,10 @@ concurrency:
   group: fresh-agent
   cancel-in-progress: false
 
+env:
+  # The most the OpenRouter key may have left before OpenCode runs, in dollars.
+  OPENROUTER_CEILING: '10'
+
 jobs:
   # The runs to make, and the prompt checked for private names before any agent sees it.
   plan:
@@ -42,6 +52,8 @@ jobs:
       runs: ${{ steps.runs.outputs.runs }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.21.0
@@ -58,38 +70,33 @@ jobs:
         run: |
           echo "runs=$(node -e 'console.log(JSON.stringify(Array.from({ length: Number(process.env.RUNS) }, (_, i) => i + 1)))')" >> "$GITHUB_OUTPUT"
 
-  run:
+  # Claude Code reports each run's own dollars and tokens, so its runs go side by side.
+  claude:
     needs: plan
-    name: ${{ matrix.agent }} run ${{ matrix.run }}
+    name: claude run ${{ matrix.run }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        agent: [claude, opencode]
         run: ${{ fromJSON(needs.plan.outputs.runs) }}
     env:
-      AGENT: ${{ matrix.agent }}
       PROMPT_FILE: fresh-agent/${{ inputs.prompt }}
       CLAUDE_MODEL: ${{ inputs.claude-model }}
-      OPENCODE_MODEL: ${{ inputs.opencode-model }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: repo
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.21.0
       # The agent's world: a home and a game folder that are both new, empty and outside the checkout, so it finds none
       # of this project's rules, memory, hooks or settings.
       - name: An empty folder and an empty home
-        run: mkdir "$RUNNER_TEMP/home" "$RUNNER_TEMP/game" "$RUNNER_TEMP/tools" "$RUNNER_TEMP/out"
-      - name: Install the agent
-        run: |
-          if [ "$AGENT" = claude ]; then pkg=@anthropic-ai/claude-code@2.1.332; else pkg=opencode-ai@1.19.6; fi
-          npm install --silent --prefix "$RUNNER_TEMP/tools" "$pkg"
+        run: mkdir "$RUNNER_TEMP/home" "$RUNNER_TEMP/game" "$RUNNER_TEMP/tools" "$RUNNER_TEMP/out" "$RUNNER_TEMP/keep"
+      - run: npm install --silent --prefix "$RUNNER_TEMP/tools" @anthropic-ai/claude-code@2.1.332
       - name: Claude Code makes the game
-        if: matrix.agent == 'claude'
         working-directory: ${{ runner.temp }}/game
         env:
           HOME: ${{ runner.temp }}/home
@@ -101,8 +108,55 @@ jobs:
             --permission-mode bypassPermissions --strict-mcp-config --no-session-persistence \
             > "$RUNNER_TEMP/out/result.json" || echo "Claude Code ended with $?"
           echo "SECONDS_TAKEN=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+      - name: What it made and what it cost
+        run: |
+          node repo/scripts/fresh-agent-report.ts claude "$RUNNER_TEMP/out/result.json" "$RUNNER_TEMP/game" "$SECONDS_TAKEN" > "$RUNNER_TEMP/keep/report.json"
+          cat "$RUNNER_TEMP/keep/report.json"
+          { echo '```json'; cat "$RUNNER_TEMP/keep/report.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/game/index.html" ]; then cp "$RUNNER_TEMP/game/index.html" "$RUNNER_TEMP/keep/"; fi
+      - name: No key in what is kept
+        env:
+          KEYS: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node repo/scripts/fresh-agent-report.ts no-keys "$RUNNER_TEMP/keep"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claude-${{ matrix.run }}
+          path: ${{ runner.temp }}/keep
+          retention-days: 7
+          if-no-files-found: error
+
+  # OpenCode's dollars are OpenRouter's count for the key, read before and after, so its runs go one at a time.
+  opencode:
+    needs: plan
+    name: opencode run ${{ matrix.run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        run: ${{ fromJSON(needs.plan.outputs.runs) }}
+    env:
+      PROMPT_FILE: fresh-agent/${{ inputs.prompt }}
+      OPENCODE_MODEL: ${{ inputs.opencode-model }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: repo
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+      - name: An empty folder and an empty home
+        run: mkdir "$RUNNER_TEMP/home" "$RUNNER_TEMP/game" "$RUNNER_TEMP/tools" "$RUNNER_TEMP/out" "$RUNNER_TEMP/keep"
+      - run: npm install --silent --prefix "$RUNNER_TEMP/tools" opencode-ai@1.19.6
+      - name: The key has a credit limit under the ceiling
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          curl -fsS -H "Authorization: Bearer $OPENROUTER_API_KEY" https://openrouter.ai/api/v1/key > "$RUNNER_TEMP/out/key.json"
+          node repo/scripts/fresh-agent-report.ts ceiling "$RUNNER_TEMP/out/key.json" "$OPENROUTER_CEILING"
       - name: OpenCode makes the game
-        if: matrix.agent == 'opencode'
         working-directory: ${{ runner.temp }}/game
         env:
           HOME: ${{ runner.temp }}/home
@@ -118,30 +172,36 @@ jobs:
             --model "openrouter/$OPENCODE_MODEL" "$(cat "$GITHUB_WORKSPACE/repo/$PROMPT_FILE")" \
             > "$RUNNER_TEMP/out/result.json" || echo "OpenCode ended with $?"
           echo "SECONDS_TAKEN=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
-          # OpenRouter's count of the key's spend catches up within seconds.
-          sleep 30
-          after=$(usage)
+          # OpenRouter's count catches up a little after the run: read it until two readings 15 seconds apart agree,
+          # for at most 3 minutes, and say how long it took.
+          after=$(usage); waited=0
+          while [ "$waited" -lt 180 ]; do
+            sleep 15; waited=$((waited + 15)); now=$(usage)
+            [ "$now" = "$after" ] && break
+            after=$now
+          done
+          echo "OpenRouter's count settled after ${waited}s."
           echo "USD=$(node -e "console.log(Math.max(0, $after - $before).toFixed(6))")" >> "$GITHUB_ENV"
       - name: What it made and what it cost
         run: |
-          if [ "$AGENT" = claude ]; then
-            node repo/scripts/fresh-agent-report.ts claude "$RUNNER_TEMP/out/result.json" "$RUNNER_TEMP/game" "$SECONDS_TAKEN" > "$RUNNER_TEMP/out/report.json"
-          else
-            node repo/scripts/fresh-agent-report.ts opencode "$RUNNER_TEMP/out/result.json" "$RUNNER_TEMP/game" "$SECONDS_TAKEN" "$OPENCODE_MODEL" "$USD" > "$RUNNER_TEMP/out/report.json"
-          fi
-          cat "$RUNNER_TEMP/out/report.json"
-          { echo '```json'; cat "$RUNNER_TEMP/out/report.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          cp -R "$RUNNER_TEMP/game" "$RUNNER_TEMP/out/game"
+          node repo/scripts/fresh-agent-report.ts opencode "$RUNNER_TEMP/out/result.json" "$RUNNER_TEMP/game" "$SECONDS_TAKEN" "$OPENCODE_MODEL" "$USD" > "$RUNNER_TEMP/keep/report.json"
+          cat "$RUNNER_TEMP/keep/report.json"
+          { echo '```json'; cat "$RUNNER_TEMP/keep/report.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/game/index.html" ]; then cp "$RUNNER_TEMP/game/index.html" "$RUNNER_TEMP/keep/"; fi
+      - name: No key in what is kept
+        env:
+          KEYS: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node repo/scripts/fresh-agent-report.ts no-keys "$RUNNER_TEMP/keep"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
         with:
-          name: ${{ matrix.agent }}-${{ matrix.run }}
-          path: ${{ runner.temp }}/out
-          if-no-files-found: warn
+          name: opencode-${{ matrix.run }}
+          path: ${{ runner.temp }}/keep
+          retention-days: 7
+          if-no-files-found: error
 
   # One table of every run: made or not, seconds, tokens, dollars. From slice 1a, pass is 4 of 5 on each agent.
   summary:
-    needs: run
+    needs: [claude, opencode]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -153,9 +213,9 @@ jobs:
         env:
           TABLE: |
             const fs = require('node:fs')
-            const rows = fs.readdirSync('runs').flatMap((dir) => {
+            const rows = fs.existsSync('runs') ? fs.readdirSync('runs').flatMap((dir) => {
               try { return [{ run: dir, ...JSON.parse(fs.readFileSync(`runs/${dir}/report.json`, 'utf8')) }] } catch { return [] }
-            })
+            }) : []
             const lines = ['| Run | Model | Made the game | Seconds | Tokens in / out / cache read / cache write | Dollars |', '|---|---|---|---|---|---|']
             for (const r of rows) {
               const t = r.tokens

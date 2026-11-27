@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { previewVersion, publishable } from '../../scripts/publish-preview.ts'
+import { onNpm, previewVersion, publishable, withVersion } from '../../scripts/publish-preview.ts'
 
 describe('previewVersion', () => {
   test('adds the run and the short commit to the base version', () => {
@@ -48,5 +48,41 @@ describe('publishable', () => {
   test('finds create-automata in this repo', () => {
     const names = publishable(join(import.meta.dir, '../..')).map(({ manifest }) => manifest.name)
     expect(names).toContain('create-automata')
+  })
+})
+
+const answer = (status: number) => () => Promise.resolve({ status })
+
+describe('onNpm', () => {
+  test('is false for a package npm has never seen, so CI never makes its first version', async () => {
+    expect(await onNpm('@automataframework/new', answer(404))).toBe(false)
+  })
+
+  test('is true for a package npm has', async () => {
+    expect(await onNpm('create-automata', answer(200))).toBe(true)
+  })
+
+  test('stops on any other answer rather than guess', async () => {
+    await expect(onNpm('create-automata', answer(503))).rejects.toThrow('503')
+  })
+
+  test('asks npm with the scope slash written as %2f', async () => {
+    let asked = ''
+    await onNpm('@automataframework/core', (url) => {
+      asked = url
+      return Promise.resolve({ status: 404 })
+    })
+    expect(asked).toBe('https://registry.npmjs.org/@automataframework%2fcore')
+  })
+})
+
+describe('withVersion', () => {
+  test('changes only the version, however the file is written', () => {
+    const text = '{"name":"create-automata",  "version" : "0.0.1","bin":{"create-automata":"index.js"}}'
+    expect(JSON.parse(withVersion(text, '0.0.1-preview.1.sha-abcdef0'))).toEqual({
+      name: 'create-automata',
+      version: '0.0.1-preview.1.sha-abcdef0',
+      bin: { 'create-automata': 'index.js' },
+    })
   })
 })

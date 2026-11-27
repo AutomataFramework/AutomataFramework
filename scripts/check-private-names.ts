@@ -24,7 +24,12 @@ export function parseNames(secret: string | undefined): string[] {
     .split(/[,\n]/)
     .map(squash)
     .filter((name) => name !== '')
-  if (names.length === 0) throw new Error('PRIVATE_NAMES is empty or not set, so nothing can be checked.')
+  if (names.length === 0) {
+    throw new Error(
+      'PRIVATE_NAMES is empty or not set, so nothing can be checked. A pull request from a fork never gets it, so this ' +
+        'check cannot pass there: a maintainer will bring your change into a branch of this repo, where it can.',
+    )
+  }
   const short = names.filter((name) => name.length < 4).length
   if (short > 0) throw new Error(`${short} of the names in PRIVATE_NAMES are under 4 letters: write each one in full.`)
   return [...new Set(names)]
@@ -46,6 +51,18 @@ export function lineHits(text: string, names: readonly string[]): number[] {
   // A name split across two lines ("Some" at the end of one, "Name" at the start of the next).
   if (hits.length === 0 && names.some((name) => squash(text).includes(name))) hits.push(0)
   return hits
+}
+
+/**
+ * A path as it may be printed: every part of it that holds a name becomes `[hidden]`, and a name that runs across
+ * parts hides the whole path. GitHub hides only the exact text of each masked name, so a path is never printed as
+ * written when it holds one.
+ */
+export function hidePath(path: string, names: readonly string[]): string {
+  const has = (text: string): boolean => names.some((name) => squash(text).includes(name))
+  if (!has(path)) return path
+  const parts = path.split('/').map((part) => (has(part) ? '[hidden]' : part))
+  return parts.some((part) => part === '[hidden]') ? parts.join('/') : '[a hidden path]'
 }
 
 /** Where the names are in one piece of text, named `where`. */
@@ -73,10 +90,11 @@ const git = (...args: string[]): string => execFileSync('git', args, { encoding:
 function scanFiles(names: readonly string[]): Finding[] {
   const findings: Finding[] = []
   for (const path of git('ls-files', '-z').split('\0').filter(Boolean)) {
-    findings.push(...scanText(`the path of a file`, path, names).map(() => ({ where: `the path ${path}` })))
+    const shown = hidePath(path, names)
+    if (shown !== path) findings.push({ where: `the path ${shown}` })
     const bytes = readFileSync(path)
     if (bytes.includes(0)) continue
-    findings.push(...scanText(path, bytes.toString('utf8'), names))
+    findings.push(...scanText(`the file ${shown}`, bytes.toString('utf8'), names))
   }
   return findings
 }
@@ -102,7 +120,9 @@ function main(): void {
   const prompts = args.flatMap((arg, i) => (args[i - 1] === '--prompt' ? [arg] : []))
   const findings: Finding[] = []
   if (prompts.length > 0) {
-    for (const file of prompts) findings.push(...scanText(`the prompt ${file}`, readFileSync(file, 'utf8'), names))
+    for (const file of prompts) {
+      findings.push(...scanText(`the prompt ${hidePath(file, names)}`, readFileSync(file, 'utf8'), names))
+    }
   } else {
     findings.push(...scanFiles(names), ...scanCommits(names))
     const { PR_TITLE, PR_BODY } = process.env

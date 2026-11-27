@@ -5,7 +5,13 @@
 //   node scripts/fresh-agent-report.ts claude <claude --output-format json file> <game folder> <seconds>
 //   node scripts/fresh-agent-report.ts opencode <opencode --format json events file> <game folder> <seconds> <model> <usd>
 // For OpenCode, <usd> is what the OpenRouter key's usage grew by over the run (OpenRouter's own count).
-import { existsSync, readFileSync } from 'node:fs'
+//
+// Two guards the workflow runs too:
+//   node scripts/fresh-agent-report.ts ceiling <OpenRouter /api/v1/key answer file> <dollars>
+//     fails unless the key has a credit limit and at most <dollars> left on it, so OpenCode's spend has a ceiling.
+//   KEYS=<secret> node scripts/fresh-agent-report.ts no-keys <folder>
+//     fails if any file in <folder> holds the value of KEYS, so no key reaches a public artifact.
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -70,7 +76,43 @@ export function readOpenCode(text: string): Pick<Report, 'tokens'> & { usd: numb
   return { tokens, usd }
 }
 
+/** Why the OpenRouter key may not be used, or null when its credit limit leaves at most `ceiling` dollars. */
+export function overCeiling(answer: string, ceiling: number): string | null {
+  const data = (JSON.parse(answer) as { data?: { limit?: unknown; limit_remaining?: unknown } }).data ?? {}
+  if (typeof data.limit !== 'number') return 'The OpenRouter key has no credit limit. Set one on openrouter.ai first.'
+  const left = typeof data.limit_remaining === 'number' ? data.limit_remaining : data.limit
+  if (left > ceiling)
+    return `The OpenRouter key has $${left} left, over the $${ceiling} ceiling. Lower its limit first.`
+  return null
+}
+
+/** The files in `folder` (not in folders below it) that hold any of `keys`. */
+export function filesWithKeys(folder: string, keys: readonly string[]): string[] {
+  const real = keys.map((key) => key.trim()).filter((key) => key.length >= 8)
+  if (real.length === 0) throw new Error('No key was given to look for.')
+  return readdirSync(folder, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((name) => {
+      const text = readFileSync(join(folder, name), 'latin1')
+      return real.some((key) => text.includes(key))
+    })
+}
+
 function main(): void {
+  const [command, first, second] = process.argv.slice(2)
+  if (command === 'ceiling' && first && second) {
+    const why = overCeiling(readFileSync(first, 'utf8'), Number(second))
+    if (why !== null) throw new Error(why)
+    console.log(`The OpenRouter key has a credit limit, with at most $${second} left.`)
+    return
+  }
+  if (command === 'no-keys' && first) {
+    const found = filesWithKeys(first, (process.env.KEYS ?? '').split('\n'))
+    if (found.length > 0) throw new Error(`A key is in ${found.join(', ')}, so nothing is kept.`)
+    console.log('No key is in what is kept.')
+    return
+  }
   const [agent, file, folder, seconds, model, usd] = process.argv.slice(2)
   if ((agent !== 'claude' && agent !== 'opencode') || !file || !folder || !seconds) {
     throw new Error('Usage: fresh-agent-report.ts claude|opencode <output file> <game folder> <seconds> [model usd]')

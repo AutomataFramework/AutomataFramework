@@ -49,6 +49,25 @@ export function publishable(root: string): { dir: string; manifest: Manifest }[]
     .toSorted((a, b) => a.manifest.name.localeCompare(b.manifest.name))
 }
 
+/**
+ * Whether npm already has the package. CI never makes a package's first version: npm gives a first version the
+ * `latest` tag whatever `--tag` says, and a package can get its trusted publisher only once it exists. So the owner's
+ * setup step publishes each new package once, by hand, and adds its trusted publisher.
+ */
+export async function onNpm(name: string, get: (url: string) => Promise<{ status: number }> = fetch): Promise<boolean> {
+  const response = await get(`https://registry.npmjs.org/${name.replace('/', '%2f')}`)
+  if (response.status === 404) return false
+  if (response.status !== 200) throw new Error(`npm answered ${response.status} for ${name}.`)
+  return true
+}
+
+/** The package.json text with only its version changed. */
+export function withVersion(text: string, version: string): string {
+  const manifest = JSON.parse(text) as Record<string, unknown>
+  manifest.version = version
+  return `${JSON.stringify(manifest, null, 2)}\n`
+}
+
 const sleep = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms))
 
 /** Waits until npm serves the version, so the run shows it is really there. */
@@ -76,10 +95,14 @@ async function main(): Promise<void> {
     return
   }
   for (const { dir, manifest } of packages) {
+    // oxlint-disable-next-line no-await-in-loop -- one package at a time, so a failure stops the rest
+    if (!(await onNpm(manifest.name))) {
+      console.log(`${manifest.name} is not on npm yet, so it is left out: its first version is the owner's step.`)
+      continue
+    }
     const version = previewVersion(manifest.version, run, sha)
     const file = join(dir, 'package.json')
-    const text = readFileSync(file, 'utf8')
-    writeFileSync(file, text.replace(`"version": "${manifest.version}"`, `"version": "${version}"`))
+    writeFileSync(file, withVersion(readFileSync(file, 'utf8'), version))
     console.log(`Publishing ${manifest.name}@${version} under the preview tag.`)
     execFileSync('npm', ['publish', '--tag', 'preview', '--access', 'public', '--provenance'], {
       cwd: dir,

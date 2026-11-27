@@ -73,7 +73,12 @@ export function serve(dir: string): Promise<{ url: string; close(): Promise<void
     server.listen(0, '127.0.0.1', () =>
       done({
         url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`,
-        close: () => new Promise((closed) => server.close(() => closed())),
+        // The browser may keep a connection open for later; closing the server must not wait for it.
+        close: () =>
+          new Promise((closed) => {
+            server.close(() => closed())
+            server.closeAllConnections()
+          }),
       }),
     ),
   )

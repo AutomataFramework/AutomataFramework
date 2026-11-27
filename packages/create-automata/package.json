@@ -1,0 +1,20 @@
+{
+  "name": "create-automata",
+  "version": "0.0.1",
+  "description": "Make a game with Automata Framework. Coming soon.",
+  "license": "MIT",
+  "author": "McThayDT",
+  "homepage": "https://automataframework.com",
+  "type": "module",
+  "bin": {
+    "create-automata": "index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=24"
+  }
+}

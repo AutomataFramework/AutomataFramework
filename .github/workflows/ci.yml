@@ -1,5 +1,5 @@
 # `plan` says whether this run has code to test. `lint`, `typecheck`, `test` and `build` run side by side, and
-# `commit-authors` checks the names and words of a pull request. `gate` is the one check `main` requires: it passes
+# `commit-authors` checks the names and words of a pull request, and `private-names` keeps private names out. `gate` is the one check `main` requires: it passes
 # only when every job that applies ran and passed. Every action is pinned to a commit.
 #
 # The whole suite runs on every run, drafts included, because it takes seconds (Fast CI in the `this-repo` skill).
@@ -145,11 +145,30 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           QUEUE_REF: ${{ github.event.merge_group.head_ref }}
 
+  # No private name in any file, commit message or the pull request's words (`scripts/check-private-names.ts`). The
+  # names come from the `PRIVATE_NAMES` secret and are never printed. It runs on every run, docs-only ones too. A pull
+  # request from a fork gets no secret, so this fails there until a maintainer brings the change into a branch here.
+  private-names:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+      - run: node scripts/check-private-names.ts
+        env:
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+
   # The one check `main` requires. It passes only when every job that applies ran and passed and every other was left
   # out by `plan`, so a job skipped because something before it failed never counts as passed. A new job is added to
   # `needs` and to APPLIES; the gate fails on a job it does not know.
   gate:
-    needs: [plan, lint, typecheck, test, build, commit-authors]
+    needs: [plan, lint, typecheck, test, build, commit-authors, private-names]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -158,7 +177,7 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs) }}
           APPLIES: >-
-            {"plan": true, "commit-authors": ${{ github.event_name != 'push' }}, "lint": ${{ needs.plan.outputs.docs != 'true' }}, "typecheck": ${{ needs.plan.outputs.docs != 'true' }}, "test": ${{ needs.plan.outputs.docs != 'true' }}, "build": ${{ needs.plan.outputs.docs != 'true' }}}
+            {"plan": true, "private-names": true, "commit-authors": ${{ github.event_name != 'push' }}, "lint": ${{ needs.plan.outputs.docs != 'true' }}, "typecheck": ${{ needs.plan.outputs.docs != 'true' }}, "test": ${{ needs.plan.outputs.docs != 'true' }}, "build": ${{ needs.plan.outputs.docs != 'true' }}}
           GATE: |
             const results = JSON.parse(process.env.RESULTS)
             const applies = JSON.parse(process.env.APPLIES)

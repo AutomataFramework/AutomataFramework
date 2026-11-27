@@ -12,6 +12,10 @@ const parse = (name: string): Workflow => Bun.YAML.parse(read(name)) as Workflow
 
 describe('every workflow', () => {
   for (const name of readdirSync(dir).filter((file) => file.endsWith('.yml'))) {
+    test(`${name} is valid YAML`, () => {
+      expect(() => Bun.YAML.parse(read(name))).not.toThrow()
+    })
+
     test(`${name} pins every action to a full commit`, () => {
       const uses = [...read(name).matchAll(/uses:\s*(\S+)/g)].map((match) => match[1] ?? '')
       for (const action of uses) expect(action).toMatch(/@[0-9a-f]{40}$/)

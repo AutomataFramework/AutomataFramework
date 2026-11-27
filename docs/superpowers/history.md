@@ -46,7 +46,11 @@ Finished milestones and their decision records, setup, rule changes, standing pe
 
 ## Standing permissions
 
-None yet.
+- 2026-11-27 04:32 UTC, the Owner (decision card), confirmed in the project thread on 2026-11-27 13:14 UTC ("yes,
+  record my standing merge permission in history.md"): sessions may merge any pull request in all four repos
+  (Framework, Examples, Editors, Site), lane 3 included, once its required reviews and audits pass and CI is green,
+  and report after. They never ask the Owner to type or tap merge. Not covered: product choices, money, new accounts,
+  releases and tags, credentials, and running fork code on RunPod pods (even after queueing); those still ask.
 
 ## Flaky tests
 

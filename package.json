@@ -1,0 +1,23 @@
+{
+  "name": "automataframework-repo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "oxlint --deny-warnings && bun fmt --check .",
+    "format": "bun fmt .",
+    "knip": "knip",
+    "typecheck": "bun check",
+    "test": "bun test",
+    "build": "pnpm --recursive --if-present build"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.5",
+    "@types/node": "24.19.4",
+    "knip": "6.48.0",
+    "oxlint": "1.95.0"
+  }
+}

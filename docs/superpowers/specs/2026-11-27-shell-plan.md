@@ -63,6 +63,10 @@ get one fresh review after the build.
 - Commits are authored by McThayDT, with no co-author or generated-by lines; merge commits, never squash.
 - Fork code never runs on a RunPod pod. Agent-made code is built on GitHub's runners; a pod only opens the built
   folder in a browser.
+- **Lessons carried into this plan (U0).** A session that waits on CI watches it in the foreground and never ends its
+  turn only to wait. Every criterion has a test before the build starts (the map at the end of this plan). Browser
+  tests wait for the game to be ready, never for a fixed time. Never commit test output folders. Keep CI under its
+  measured capacity.
 
 ## Things I checked before planning (2026-11-27), and what they change
 
@@ -203,24 +207,24 @@ repo's `history.md` before it relies on it.
 Set here from zero, since these packages are new. U0 writes the measured count on `main` beside each. CI's `budgets`
 job fails over the number; at the budget the slice cuts something or brings a card.
 
-| Package | Budget | Why this size |
-|---|---|---|
-| `/core` | 3,500 | tick, input, content, schemas, saves, plays, upgrader, audio |
-| `/2d` | 1,200 | one drawing layer |
-| `/shell` | 5,000 | Svelte files counted too |
-| `/tools` | 3,000 | commands, MCP, smoothness, link |
-| `/art` | 700 | three steps and a sidecar |
-| `create-automata` | 300, plus 700 for `template/` | |
+| Package | Budget | On `main` when 1a starts | Why this size |
+|---|---|---|---|
+| `/core` | 3,500 | 0 (no `packages/*/src` files) | tick, input, content, schemas, saves, plays, upgrader, audio |
+| `/2d` | 1,200 | 0 (no `packages/*/src` files) | one drawing layer |
+| `/shell` | 5,000 | 0 (no `packages/*/src` files) | Svelte files counted too |
+| `/tools` | 3,000 | 0 (no `packages/*/src` files) | commands, MCP, smoothness, link |
+| `/art` | 700 | 0 (no `packages/*/src` files) | three steps and a sidecar |
+| `create-automata` | 300, plus 700 for `template/` | 0 in `src` (its one file, `index.js`, is 2 lines) |  |
 
-These are estimates, not measurements. V1's 2D runtime was 57,341 lines, so the report watches the trend.
+Measured by `git ls-files 'packages/*/src' | xargs wc -l` on `main` at 1f0e5bd (no files matched). These are estimates, not measurements. V1's 2D runtime was 57,341 lines, so the report watches the trend.
 
 ---
 
 ## U0: Docs
 
-- [ ] Copy the spec and this plan to `docs/superpowers/specs/` in Framework, unchanged but for their own paths.
-- [ ] Run `git ls-files 'packages/*/src' | xargs wc -l` on `main` and write the counts into the budgets table.
-- [ ] Carry the lessons whose trigger matches: "a session that waits on CI watches it in the foreground"; from V1,
+- [x] Copy the spec and this plan to `docs/superpowers/specs/` in Framework, unchanged but for their own paths.
+- [x] Run `git ls-files 'packages/*/src' | xargs wc -l` on `main` and write the counts into the budgets table.
+- [x] Carry the lessons whose trigger matches: "a session that waits on CI watches it in the foreground"; from V1,
       "every criterion has a test before the build starts" (the map at the end of this plan), "browser tests wait
       for ready", "never commit test output folders", "keep CI under its measured capacity".
 

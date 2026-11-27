@@ -62,7 +62,7 @@ test('draws the picture at the top left corner, in call order', async ({ page })
 })
 
 test('a later call is drawn over an earlier one', async ({ page }) => {
-  const pixel = await page.evaluate(() => {
+  const read = await page.evaluate(() => {
     const { renderer, sprites, shapes, pixel } = window.two
     renderer.beginFrame()
     sprites.drawSprite('flag', 20, 20)
@@ -72,7 +72,7 @@ test('a later call is drawn over an earlier one', async ({ page }) => {
     return [pixel(22, 25), pixel(30, 25)]
   })
   // The rectangle covers the first picture; the second picture covers the rectangle's right half.
-  expect(pixel).toEqual([
+  expect(read).toEqual([
     [0, 255, 0],
     [255, 0, 0],
   ])

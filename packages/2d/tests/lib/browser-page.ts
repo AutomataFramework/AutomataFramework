@@ -12,7 +12,7 @@ const pixi = fileURLToPath(new URL('../dist/pixi.min.mjs', import.meta.resolve('
 const home = `<!doctype html><title>2d</title><script type="importmap">{"imports":{"pixi.js":"/vendor/pixi.mjs"}}</script><body style="margin:0"></body>`
 
 /** Everything a test reaches by name, on `window.two`, with one renderer started at `width` by `height`. */
-export type Two = {
+type Two = {
   renderer: typeof import('../../src/features/renderer/renderer.ts')
   sprites: typeof import('../../src/features/sprites/sprites.ts')
   shapes: typeof import('../../src/features/shapes/shapes.ts')
@@ -42,14 +42,13 @@ export async function openTwoDPage(page: Page, width = 200, height = 120): Promi
   })
   await page.goto('http://two-d.test/')
   await page.evaluate(
-    async ([w, h]) => {
-      const load = (path: string): Promise<any> => import(path)
+    async ({ w, h }: { w: number; h: number }) => {
       const [renderer, sprites, shapes, text, stats] = await Promise.all([
-        load('/src/features/renderer/renderer.ts'),
-        load('/src/features/sprites/sprites.ts'),
-        load('/src/features/shapes/shapes.ts'),
-        load('/src/features/text/text.ts'),
-        load('/src/features/frame-count/frame-count.ts'),
+        import(`${'/src/features/renderer/renderer.ts'}`),
+        import(`${'/src/features/sprites/sprites.ts'}`),
+        import(`${'/src/features/shapes/shapes.ts'}`),
+        import(`${'/src/features/text/text.ts'}`),
+        import(`${'/src/features/frame-count/frame-count.ts'}`),
       ])
       const canvas = document.createElement('canvas')
       document.body.append(canvas)
@@ -90,6 +89,6 @@ export async function openTwoDPage(page: Page, width = 200, height = 120): Promi
         },
       }
     },
-    [width, height],
+    { w: width, h: height },
   )
 }

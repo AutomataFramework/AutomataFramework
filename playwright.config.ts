@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 // The one Playwright config. A file named `*.spec.ts` runs here; `*.test.ts` runs in `bun test`.
 export default defineConfig({
   testDir: 'packages',
-  testMatch: '**/tests/journeys/*.spec.ts',
+  testMatch: '**/tests/**/*.spec.ts',
   // The newcomer journey packs and installs real packages, which takes a few minutes the first time.
   timeout: 600_000,
   workers: 1,

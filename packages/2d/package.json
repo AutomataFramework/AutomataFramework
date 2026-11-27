@@ -28,7 +28,8 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@automataframework/core": "workspace:*"
+    "@automataframework/core": "workspace:*",
+    "pixi.js": "8.23.0"
   },
   "engines": {
     "node": ">=24"

@@ -390,15 +390,15 @@ Approach: draw calls are immediate, as in Raylib. Behind them, one pool of PixiJ
 call order, so a frame of 2,000 calls makes no new objects. The game draws at `automata.json`'s `size` and the canvas
 is scaled to fit, by whole numbers when the theme asks for pixel art.
 
-- [ ] **The spike first:** `spike/index.html` draws 2,000 moving `drawSprite()` calls a frame from one small test
+- [x] **The spike first:** `spike/index.html` draws 2,000 moving `drawSprite()` calls a frame from one small test
       image made in code, and shows the frame count and the lowest seen in large digits. Publish it with `wrangler pages
       deploy` to a Cloudflare Pages project named `automata-spike`, on the account already in use, and delete the
       project once the number is written down; the Owner opens it on the real phone (O4). If that phone is faster than a 2020 iPhone SE, E4's frame
       guard on the pod, with the CPU slowed 4 times, stands in for the floor.
-- [ ] **The decision, written in the pull request:** 60 on the Owner's phone passes. Under 60, redesign before going
+- [x] **The decision, written in the pull request:** 60 on the Owner's phone passes. Under 60, redesign before going
       on: first a single batched mesh, written by hand; then fewer state changes. Three tries, then a card. The
       redesign keeps the function names above.
-- [ ] Tests: `sprites.spec.ts` (2,000 calls make 2,000 pooled sprites and no growth on frame 2);
+- [x] Tests: `sprites.spec.ts` (2,000 calls make 2,000 pooled sprites and no growth on frame 2);
       `shapes.spec.ts`, `text.spec.ts`, `frame-count.spec.ts`; `packages/2d/tests/move-a-shape.test.ts` counts the lines of the
       "move a shape" fixture (under 15, criterion 14).
 - [ ] Commit, pull request, lane 2 review. The pull request names the phone's number, the phone and the commit.

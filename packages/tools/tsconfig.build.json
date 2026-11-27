@@ -3,11 +3,11 @@
   "compilerOptions": {
     "noEmit": false,
     "declaration": true,
-    "emitDeclarationOnly": true,
     "rewriteRelativeImportExtensions": true,
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {}
   },
   "include": ["src"]
 }

@@ -11,7 +11,10 @@
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": ["node", "bun"]
+    "types": ["node", "bun"],
+    "paths": {
+      "@automataframework/*": ["./packages/*/src/index.ts"]
+    }
   },
   "include": ["scripts", "tests", "packages"],
   "exclude": ["packages/create-automata/template", "**/dist"]

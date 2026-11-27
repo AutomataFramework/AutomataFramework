@@ -27,7 +27,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun ../../scripts/build-package.ts"
+    "build": "tsc -p tsconfig.build.json"
   },
   "engines": {
     "node": ">=24"

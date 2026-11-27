@@ -3,3 +3,5 @@
 *.md
 **/*.md
 pnpm-lock.yaml
+# Code copied in from other projects, kept exactly as it came.
+packages/*/vendor/

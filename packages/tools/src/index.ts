@@ -1,5 +1,5 @@
 export { check, gate } from './features/commands/check.ts'
 export { link } from './features/commands/link.ts'
 export { commands, main } from './features/commands/registry.ts'
-export type { Command, Ctx } from './features/commands/registry.ts'
+export type { Command, Io } from './features/commands/registry.ts'
 export { findKeys, scanFolder } from './features/keys/find-keys.ts'

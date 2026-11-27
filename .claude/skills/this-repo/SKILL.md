@@ -12,7 +12,8 @@ What is particular to AutomataFramework.
   package list there is frozen.
 - **Slice 0 holds no product code.** The packages arrive in slice 1a.
 - **Private stays private.** No real game name, price or private plan appears here, in a file, a prompt or a commit
-  message. CI fails on any name listed in the `PRIVATE_NAMES` secret.
+  message. A CI check that fails on any name in the `PRIVATE_NAMES` secret is not built yet: it comes in the next
+  slice 0 pull request.
 
 ## Tools
 

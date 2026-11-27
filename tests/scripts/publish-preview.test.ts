@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { onNpm, previewVersion, publishable, withVersion } from '../../scripts/publish-preview.ts'
 
 describe('previewVersion', () => {
@@ -48,6 +48,16 @@ describe('publishable', () => {
   test('finds create-automata in this repo', () => {
     const names = publishable(join(import.meta.dir, '../..')).map(({ manifest }) => manifest.name)
     expect(names).toContain('create-automata')
+  })
+
+  test('every package names this repo, which npm checks against the provenance', () => {
+    for (const { dir } of publishable(join(import.meta.dir, '../..'))) {
+      const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as {
+        repository?: { type?: string; url?: string; directory?: string }
+      }
+      expect(manifest.repository?.url).toBe('git+https://github.com/AutomataFramework/AutomataFramework.git')
+      expect(manifest.repository?.directory).toBe(relative(join(import.meta.dir, '../..'), dir))
+    }
   })
 })
 

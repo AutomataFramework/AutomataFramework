@@ -5,6 +5,11 @@
   "license": "MIT",
   "author": "McThayDT",
   "homepage": "https://automataframework.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AutomataFramework/AutomataFramework.git",
+    "directory": "packages/create-automata"
+  },
   "type": "module",
   "bin": {
     "create-automata": "index.js"

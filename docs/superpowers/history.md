@@ -67,3 +67,11 @@ Finished milestones and their decision records, setup, rule changes, standing pe
   lists it), and the next runs (`7e242cc`, `98d33e6`) were green with no change. The same wait went red once before at
   `1c42ed0` (run 45940697237), which #4 answered by stretching the wait from one minute to five. Still open: a fix that
   does not hang on npm's serving delay (a lane 2 change to `scripts/publish-preview.ts`, with its review).
+- `core/tests/features/audio/audio.spec.ts`, "mute(true) puts the master at 0 and mute(false) brings back the volume it
+  had", merge-queue run 46017760960 (2026-11-27, `gh-readonly-queue/main/pr-17-...`): `audio.gain('master')` read 0.5
+  right after `mute(true)`, where the test expects 0. It passed in the same job on the pull request's own head
+  (`674b4fa`) and locally, and the change under test (`/2d`) does not touch core. Likely cause, not yet proved: in a
+  running `AudioContext`, Chromium's `AudioParam.value` getter can return the value from the last render quantum rather
+  than the one just set, so the read-back races the audio thread; `createAudio().gain()` could return the value it
+  stored instead. Still open: its own thread (a lane 2 change to `packages/core/src/features/audio/audio.ts`, with its
+  review).

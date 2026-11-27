@@ -650,14 +650,14 @@ maps it to the DUEL palette (256 colours, held as a list of hex values in code),
 `<name>.art.json`: `{ prompt, model, seed, madeAt, steps, cost }`. A `review` step sends a picture back to fal.ai's
 "reimagine" model and saves the answer beside it.
 
-- [ ] **First step, before any other code:** copy unfake.js's file from its GitHub repo at one named commit into
+- [x] **First step, before any other code:** copy unfake.js's file from its GitHub repo at one named commit into
       `packages/art/vendor/unfake/`, with its MIT licence and the commit beside it (no git dependency, so nobody
       who installs `/art` fetches from GitHub, and none of its scripts run). List everything it loads itself; any
       library not on the spec's list is a card before going on. Then run it on one picture inside Playwright's
       Chromium (it is a browser library). If it cannot be made to run in three tries, stop and bring a card.
-- [ ] Pick the fal.ai models from its list (`https://fal.ai/api/models?keywords=`), one for sprites and one for
+- [x] Pick the fal.ai models from its list (`https://fal.ai/api/models?keywords=`), one for sprites and one for
       "reimagine", and write both ids and their prices into the pull request and the sidecar.
-- [ ] Tests: the palette step leaves only DUEL colours (property test over 200 seeded pictures made in code); the
+- [x] Tests: the palette step leaves only DUEL colours (property test over 200 seeded pictures made in code); the
       sidecar is written and complete; a stand-in fal.ai answers in tests, so CI spends nothing. The spend counter
       outlives a session: every call, kept or thrown away, adds a line to a committed ledger
       (`games/art-ledger.json` in Examples), and `make-art` refuses a call when the month's lines reach $50.

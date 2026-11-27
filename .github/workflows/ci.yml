@@ -1,4 +1,4 @@
-# `plan` says whether this run has code to test. `lint`, `typecheck`, `test` and `build` run side by side, and
+# `plan` says whether this run has code to test, and whether `browser` and `budgets` have their entry files. `lint`, `typecheck`, `test` and `build` run side by side, and
 # `commit-authors` checks the names and words of a pull request, and `private-names` keeps private names out. `gate` is the one check `main` requires: it passes
 # only when every job that applies ran and passed. Every action is pinned to a commit.
 #
@@ -35,7 +35,28 @@ jobs:
       pull-requests: read
     outputs:
       docs: ${{ steps.plan.outputs.docs }}
+      browser: ${{ steps.entry.outputs.browser }}
+      budgets: ${{ steps.entry.outputs.budgets }}
     steps:
+      # `browser` and `budgets` turn on only once their entry file exists, so this workflow can land before the
+      # first change that uses them. Without the files the job is left out and `gate` passes without it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            playwright.config.ts
+            scripts/check-line-budgets.ts
+          sparse-checkout-cone-mode: false
+      - id: entry
+        run: |
+          set -euo pipefail
+          browser=false
+          budgets=false
+          if [ -f playwright.config.ts ]; then browser=true; fi
+          if [ -f scripts/check-line-budgets.ts ]; then budgets=true; fi
+          echo "browser=$browser"
+          echo "budgets=$budgets"
+          echo "browser=$browser" >> "$GITHUB_OUTPUT"
+          echo "budgets=$budgets" >> "$GITHUB_OUTPUT"
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
@@ -122,6 +143,40 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+  # The browser tests, in Playwright's own image for the locked version, pinned by digest, so the job installs no
+  # browser or system library. `--user 1001` is the runner's own user, so the checkout stays writable, and
+  # `--ipc=host` keeps Chromium from running out of shared memory. One piece: Framework's browser tests are few.
+  browser:
+    needs: plan
+    if: needs.plan.outputs.docs != 'true' && needs.plan.outputs.browser == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+      options: --user 1001 --ipc=host
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:browser
+
+  # The line budgets (`scripts/check-line-budgets.ts`).
+  budgets:
+    needs: plan
+    if: needs.plan.outputs.docs != 'true' && needs.plan.outputs.budgets == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - run: bun scripts/check-line-budgets.ts
+
   # The commits and the words of the pull request (`scripts/check-commit-authors.ts`), checked inside `gate` so the
   # merge queue, which waits only on `gate`, checks them too. A push to `main` has no pull request, so it is left out
   # there. It may write the pull request, only to take off the footer the cloud tool appends.
@@ -168,7 +223,7 @@ jobs:
   # out by `plan`, so a job skipped because something before it failed never counts as passed. A new job is added to
   # `needs` and to APPLIES; the gate fails on a job it does not know.
   gate:
-    needs: [plan, lint, typecheck, test, build, commit-authors, private-names]
+    needs: [plan, lint, typecheck, test, build, browser, budgets, commit-authors, private-names]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -177,7 +232,7 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs) }}
           APPLIES: >-
-            {"plan": true, "private-names": true, "commit-authors": ${{ github.event_name != 'push' }}, "lint": ${{ needs.plan.outputs.docs != 'true' }}, "typecheck": ${{ needs.plan.outputs.docs != 'true' }}, "test": ${{ needs.plan.outputs.docs != 'true' }}, "build": ${{ needs.plan.outputs.docs != 'true' }}}
+            {"plan": true, "private-names": true, "commit-authors": ${{ github.event_name != 'push' }}, "lint": ${{ needs.plan.outputs.docs != 'true' }}, "typecheck": ${{ needs.plan.outputs.docs != 'true' }}, "test": ${{ needs.plan.outputs.docs != 'true' }}, "build": ${{ needs.plan.outputs.docs != 'true' }}, "browser": ${{ needs.plan.outputs.docs != 'true' && needs.plan.outputs.browser == 'true' }}, "budgets": ${{ needs.plan.outputs.docs != 'true' && needs.plan.outputs.budgets == 'true' }}}
           GATE: |
             const results = JSON.parse(process.env.RESULTS)
             const applies = JSON.parse(process.env.APPLIES)
